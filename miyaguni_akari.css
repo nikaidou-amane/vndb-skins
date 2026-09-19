@@ -9,9 +9,10 @@
    配色：取自背景图 —— 夜樱的粉、和服/栏杆的红、灯笼的暖金、夜色的深紫黑。
          `--灰紫粉` 负责"弱化"信息，`--灯笼金` 负责状态色，`--深红` 负责警示/NSFW。
 
-   背景图：GitHub 仓库 nikaidou-amane/assets → senmomo/miyaguni_akari.jpg（公开，已实测可外链）
+   背景图：GitHub 仓库 nikaidou-amane/assets → senmomo/miyaguni_akari.jpg
+           实际引用走 jsDelivr CDN，并带图片变换后缀：...@1192w.avif（宽 1192px、AVIF，实测 163KB）。
            ⚠️ 地址栏里的 github.com/.../blob/... 是网页地址，不能当图片外链；
-              外链必须写成 raw.githubusercontent.com/... 或 cdn.jsdelivr.net/gh/... 的形式。
+              raw.githubusercontent.com 可以外链，但缓存只有几分钟，不适合长期当背景源。
 
    背景显示方式：图片贴在「整个网页」的右上角，随页面一起滚动（往下翻会滚出视野），
                  高度 = 视口宽度的 60%（见 --theme-bg-h），整张图完整显示、不裁切；
@@ -39,9 +40,9 @@
 
   /* 背景 */
   --bodybg:     #1c0810;                 /* 深夜紫黑：图片滚走后的页面底色 */
-  --boxbg:      rgba(38, 12, 23, 0.67);     /* 半透明深紫红卡片（想让背景图更多地透出来就调低，如 0.85） */
-  --tabbg:      #3a1424;                 /* 未选中标签页 */
-  --secbg:      #40192a;                 /* 输入框 / 表头 */
+  --boxbg:      rgba(38, 12, 23, 0.75);     /* 半透明深紫红卡片（想让背景图更多地透出来就调低，如 0.85） */
+  --tabbg:      #3a1424bf;                 /* 未选中标签页 */
+  --secbg:      #40192ae5;                 /* 输入框 / 表头 */
   --secborder:  #a84a6d;
   --border:     #7d3252;
 
@@ -56,26 +57,29 @@
   --blendbg:      #2b1020;   /* 菜单 hover 时的底色 */
 
   /* ---- 本主题自定义（官方皮肤里没有的变量） ---- */
-  /* 背景图：多层 fallback —— 加载失败的那层不绘制，下层自动顶上。
-     两层指向同一个文件：第 1 层走 jsDelivr CDN（国内通常更快），第 2 层走 GitHub raw 直链。
-     ⚠️ 多层之间只用逗号分隔；最后一项后面不能留逗号，整条声明末尾必须有分号。
-        尾逗号会让 background-image 变成非法值，漏分号会把下一条变量吞掉 ——
-        两种写法都会导致图片完全不显示（这次的坑就是这么来的）。 */
+  /* 背景图：只保留 jsDelivr 一条源（GitHub raw 直链缓存只有几分钟，已弃用）。
+     URL 里的 @1192w.avif 是 jsDelivr 的图片变换后缀：宽 1192px、转 AVIF，实测约 163KB。
+     ⚠️ 声明末尾必须有分号，最后一项后面不能留逗号：
+        尾逗号 / 漏分号会让 --theme-bg 变成非法值，图片完全不显示（这次的坑就是这么来的）。
+     ⚠️ 缓存（实测）：@main 是分支引用，jsDelivr 回 `max-age=604800`（浏览器 7 天强缓存，
+        过期后复验一次）。想要 1 年 + `immutable`（期间连刷新都不发请求），把 @main 换成
+        固定的 commit SHA（如 @a917856e30ce899559117693192cdd7f386c08ab）或 tag 即可；
+        换图时顺手改这里就行 —— 文件名里的 -ae3f77d3... 本身就是内容哈希，
+        换图必然要改 URL，所以固定版本不增加任何维护成本。 */
   --theme-bg:
-    url("https://fastly.jsdelivr.net/gh/nikaidou-amane/assets@main/senmomo/miyaguni_akari.jpg"),
-    url("https://raw.githubusercontent.com/nikaidou-amane/assets/refs/heads/main/senmomo/miyaguni_akari.jpg");
+    url("https://fastly.jsdelivr.net/gh/nikaidou-amane/assets@a917856e30ce899559117693192cdd7f386c08ab/senmomo/miyaguni_akari-ae3f77d3d85eccb6344063c05711e4c9626510519.jpg@1192w.avif");
 
   /* 图片尺寸：只调 --theme-bg-h 一处，其它都自动跟着走。
      60vw = 高度取视口宽度的 60%（1440 宽的屏幕 → 高 864px；390 宽的手机 → 高 234px） */
-  --theme-bg-h: 60vw;
+  --theme-bg-h: 55vw;
   /* 图片宽度 = 高度 × 原图宽高比；本图 1400×1800，所以是 1400 ÷ 1800 ≈ 0.7778。
      ⚠️ 换背景图后这个系数要一起改成「新图宽 ÷ 新图高」。 */
   --theme-bg-w: calc(var(--theme-bg-h) * 0.7778);
   /* 边缘渐隐的深度：越大过渡带越长越柔和，越小越干净利落 */
-  --theme-bg-fade: 30%;
+  --theme-bg-fade: 20%;
 
   /* 图片位置：整个网页的右上角 */
-  --theme-bg-pos: right top;
+  --theme-bg-pos: left top;
 
   /* 与 --bodybg 同色但全透明：给渐隐层用（比直接写 transparent 更稳，不会发灰） */
   --bodybg-0: rgba(28, 8, 16, 0);
@@ -95,18 +99,16 @@
          不能写 contain / cover / 百分比 —— 它们会按「整个文档高度」算，长页面会炸。
    -------------------------------------------------------------------------- */
 body {
-  /* 图层顺序：先写的画在上面。
-     ①② 是"边缘渐隐"，③④ 是图片本身（raw / jsDelivr 两层 fallback）。
+  /* 图层顺序：先写的画在上面。①② 是"边缘渐隐"，③ 是图片本身。
      ①② 与图片用同一套尺寸、位置、原点，所以永远和图片边缘严丝合缝地对齐。 */
   background-image:
-    linear-gradient(to right, var(--bodybg), var(--bodybg-0) var(--theme-bg-fade)),
+    linear-gradient(to left, var(--bodybg), var(--bodybg-0) var(--theme-bg-fade)),
     linear-gradient(to top,   var(--bodybg), var(--bodybg-0) var(--theme-bg-fade)),
     var(--theme-bg);
   background-size:
     var(--theme-bg-w) var(--theme-bg-h),   /* ① 渐隐层：尺寸 = 图片的盒子 */
     var(--theme-bg-w) var(--theme-bg-h),   /* ② 同上 */
-    auto var(--theme-bg-h),                /* ③ 图片：高度固定、宽度按比例自动 */
-    auto var(--theme-bg-h);                /* ④ 图片 fallback */
+    auto var(--theme-bg-h);                /* ③ 图片：高度固定、宽度按比例自动 */
   background-position: var(--theme-bg-pos);   /* 单值会套用到所有图层 */
   background-repeat: no-repeat;
   background-attachment: scroll;
@@ -161,7 +163,8 @@ article {
 }
 
 /* ==========================================================================
-   想换背景图：只改第 1 节的 --theme-bg（可写多层 url，前面的失败会自动用后面的）。
+   想换背景图：只改第 1 节的 --theme-bg（建议保持「内容哈希文件名 + @固定 commit」的写法，
+               这样浏览器按 1 年 immutable 缓存，换图时改 URL 即自动失效，不必清缓存）。
    想调整大小/位置：改 --theme-bg-h（如 45vh / 60vw / 420px）
                     和 --theme-bg-pos（right top / center top / right bottom）。
    想让边缘过渡更柔/更利落：改 --theme-bg-fade（45% 更柔、18% 更利落）。
