@@ -2,7 +2,7 @@
 // @name         VNDB Daily Skin
 // @name:zh-CN   VNDB 每日皮肤
 // @namespace    https://github.com/nikaidou-amane/vndb-skins
-// @version      1.0.0
+// @version      1.1.0
 // @description  按本地日期在 vndb-skins/custom/ 的多套主题之间轮换，每天 0 点自动换一套
 // @author       nikaidou-amane
 // @match        https://vndb.org/*
@@ -59,16 +59,21 @@
      配置
      --------------------------------------------------------------------- */
 
-  /** 主题仓库（只有这个仓库的 custom/ 会被加载） */
+  /** 主题仓库（只有这个仓库的 custom/ 会被加载）。SHA 要对上 commit，
+      改动 custom/ 里的主题后要一起换（当前 = "feat: add css"）。 */
   const CDN_BASES = [
-    'https://fastly.jsdelivr.net/gh/nikaidou-amane/vndb-skins@6f8c30b65897b61947636ad78faa16243361eef9/custom/',
-    'https://cdn.jsdelivr.net/gh/nikaidou-amane/vndb-skins@6f8c30b65897b61947636ad78faa16243361eef9/custom/',
+    'https://fastly.jsdelivr.net/gh/nikaidou-amane/vndb-skins@f38bb1b32dd69e69de26383c6dcda869ada76ce2/custom/',
+    'https://cdn.jsdelivr.net/gh/nikaidou-amane/vndb-skins@f38bb1b32dd69e69de26383c6dcda869ada76ce2/custom/',
   ];
 
-  /** 轮换顺序：THEMES[天数 % THEMES.length]，改顺序 = 改哪天用哪套 */
+  /** 轮换顺序：THEMES[天数 % THEMES.length]，改顺序 = 改哪天用哪套。
+      注意加主题会重排整个周期（因为是 day % N），不是只在末尾多一天。
+      按目录名排序，和 custom/ 下的文件名一致。 */
   const THEMES = [
-    { name: 'miyaguni_akari', file: 'miyaguni_akari.css' },
     { name: 'arise_kaguya',   file: 'arise_kaguya.css'   },
+    { name: 'himeno_towa',    file: 'himeno_towa.css'    },
+    { name: 'izumi_hiyori',   file: 'izumi_hiyori.css'   },
+    { name: 'miyaguni_akari', file: 'miyaguni_akari.css' },
     { name: 'nabari_anju',    file: 'nabari_anju.css'    },
   ];
 
