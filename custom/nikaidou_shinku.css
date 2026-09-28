@@ -12,7 +12,8 @@
         桌面的暖木 #b09070 / #cfaf76、房间暗部 #271a33 / #2e2933、最深 #0c060f。
      ② 角色立绘（vndb.org/c1793）：**金发双马尾**（丸子头 + 发辫）、**红瞳**、
         水手服 + 红领结 + 紫色衣领。
-     落地：底色用房间暗部那档**深紫棕**（不抢戏）
+     落地：底色用房间暗部那档**深紫黑**（不抢戏。旧值 #150e16 彩度只有 0.020，
+        和 izumi / koizuka / nabari 的底色几乎同色，所以把房间暗部的紫补足）
          → 链接用**金**（金发，出现频率最高，走"暖、亮、安静"，把抢眼让给强调色）
          → 强调用**紫罗兰**（水手服的紫领；和金既不同族、也不像红那样会和状态下标撞）
          → 卡片标题用珊瑚玫瑰（发饰那档 #d87873 压深）、副标题用浅奶油金（松饼那档提亮）
@@ -71,13 +72,16 @@
                               和副标题的浅奶油金色差够大，主次一眼分得开。 */
   --alttitle:   #f5dfb8;   /* 副标题：浅奶油金（松饼的 #f9e6a7），做第二行 */
 
-  /* 背景 —— 深紫棕（房间暗部 #271a33 / #2e2933 再压深），6 条是一套，改就一起改。 */
-  --bodybg:     #150e16;                 /* 深紫棕：图片滚走后的页面底色 */
-  --boxbg:      rgba(42, 28, 32, 0.75);  /* 半透明暖黑卡片（想让背景图更多地透出来就调低，如 0.85） */
-  --tabbg:      #2a1c24bf;               /* 未选中标签页 */
-  --secbg:      #33222ae5;               /* 输入框 / 表头 */
-  --secborder:  #7a5f62;
-  --border:     #4a363c;
+  /* 背景 —— 深紫黑（房间暗部 #271a33 / #2e2933 再压深，色相 318°），6 条是一套，改就一起改。
+     ⚠️ 旧值 #150e16 的彩度只有 0.020，和 izumi / koizuka / nabari 的底色几乎同色
+        （ΔE00 5.8 / 6.1 / 6.0），四套主题的页面底分不出来。
+        明度阶梯没动，只把色相归到她房间暗部的紫、彩度补到 0.033。 */
+  --bodybg:     #170c1a;                 /* 深紫黑：图片滚走后的页面底色 */
+  --boxbg:      rgba(40, 27, 43, 0.75);  /* 半透明深紫黑卡片（想让背景图更多地透出来就调低，如 0.85） */
+  --tabbg:      #291b2dbf;               /* 未选中标签页 */
+  --secbg:      #312135e5;               /* 输入框 / 表头 */
+  --secborder:  #745e79;
+  --border:     #47354b;
 
   /* 杂项 */
   --diffadd:      #2c4a30;   /* diff 新增：暗墨绿 */
@@ -87,7 +91,7 @@
   --noticebg:     #3a2c14;   /* 提示框：暖金褐 */
   --noticeborder: #c9a04e;
   --helpbutton:   #e8c46e;   /* 表单里的 (i) 按钮：与 --link 同色 */
-  --blendbg:      #241820;   /* 菜单 hover 时的底色 */
+  --blendbg:      #241627;   /* 菜单 hover 时的底色 */
 
   /* ---- 本主题自定义（官方皮肤里没有的变量） ---- */
   /* 背景图：只保留 jsDelivr 一条源（GitHub raw 直链缓存只有几分钟，已弃用）。
@@ -122,31 +126,31 @@
         亮度曲线的斜率在边界上从 0 突然跳成固定值，眼睛会在那儿看到一条硬边（马赫带）。
         （在 himeno_towa 上实测：底色亮度 14 一路平，一进图片立刻 20→25→31→36…，折角很明显。
         加宽渐隐深度治不好，因为它治的是"斜率突变"而不是"宽度"。）
-        本图下缘比底色亮 12 倍以上（177 vs 约 14），所以下缘必用 S 曲线。
-     ⚠️ 下面几档里的 rgba(21, 14, 22, …) 的 RGB 必须和 --bodybg 一致，改底色时一起改。
+        本图下缘比底色亮 12 倍以上（177 vs 约 15），所以下缘必用 S 曲线。
+     ⚠️ 下面几档里的 rgba(23, 12, 26, …) 的 RGB 必须和 --bodybg 一致，改底色时一起改。
      各档透明度按 smoothstep 取值（t=0.06/0.15/0.30/0.50/0.70/0.85/0.94）。 */
   /* 横向那层用这份（深度 = --theme-bg-fade，% 相对图层宽） */
   --theme-fade-stops:
     var(--bodybg) 0%,
-    rgba(21, 14, 22, 0.990) calc(var(--theme-bg-fade) * 0.06),
-    rgba(21, 14, 22, 0.939) calc(var(--theme-bg-fade) * 0.15),
-    rgba(21, 14, 22, 0.811) calc(var(--theme-bg-fade) * 0.30),
-    rgba(21, 14, 22, 0.500) calc(var(--theme-bg-fade) * 0.50),
-    rgba(21, 14, 22, 0.189) calc(var(--theme-bg-fade) * 0.70),
-    rgba(21, 14, 22, 0.061) calc(var(--theme-bg-fade) * 0.85),
-    rgba(21, 14, 22, 0.010) calc(var(--theme-bg-fade) * 0.94),
+    rgba(23, 12, 26, 0.990) calc(var(--theme-bg-fade) * 0.06),
+    rgba(23, 12, 26, 0.939) calc(var(--theme-bg-fade) * 0.15),
+    rgba(23, 12, 26, 0.811) calc(var(--theme-bg-fade) * 0.30),
+    rgba(23, 12, 26, 0.500) calc(var(--theme-bg-fade) * 0.50),
+    rgba(23, 12, 26, 0.189) calc(var(--theme-bg-fade) * 0.70),
+    rgba(23, 12, 26, 0.061) calc(var(--theme-bg-fade) * 0.85),
+    rgba(23, 12, 26, 0.010) calc(var(--theme-bg-fade) * 0.94),
     var(--bodybg-0) var(--theme-bg-fade);
   /* 纵向那层用这份（深度 = --theme-bg-fade-y，% 相对图层高）—— 除了深度变量换成
      --theme-bg-fade-y，其余数值与横向完全一致，别手抖改歪。 */
   --theme-fade-stops-y:
     var(--bodybg) 0%,
-    rgba(21, 14, 22, 0.990) calc(var(--theme-bg-fade-y) * 0.06),
-    rgba(21, 14, 22, 0.939) calc(var(--theme-bg-fade-y) * 0.15),
-    rgba(21, 14, 22, 0.811) calc(var(--theme-bg-fade-y) * 0.30),
-    rgba(21, 14, 22, 0.500) calc(var(--theme-bg-fade-y) * 0.50),
-    rgba(21, 14, 22, 0.189) calc(var(--theme-bg-fade-y) * 0.70),
-    rgba(21, 14, 22, 0.061) calc(var(--theme-bg-fade-y) * 0.85),
-    rgba(21, 14, 22, 0.010) calc(var(--theme-bg-fade-y) * 0.94),
+    rgba(23, 12, 26, 0.990) calc(var(--theme-bg-fade-y) * 0.06),
+    rgba(23, 12, 26, 0.939) calc(var(--theme-bg-fade-y) * 0.15),
+    rgba(23, 12, 26, 0.811) calc(var(--theme-bg-fade-y) * 0.30),
+    rgba(23, 12, 26, 0.500) calc(var(--theme-bg-fade-y) * 0.50),
+    rgba(23, 12, 26, 0.189) calc(var(--theme-bg-fade-y) * 0.70),
+    rgba(23, 12, 26, 0.061) calc(var(--theme-bg-fade-y) * 0.85),
+    rgba(23, 12, 26, 0.010) calc(var(--theme-bg-fade-y) * 0.94),
     var(--bodybg-0) var(--theme-bg-fade-y);
 
   /* 图片位置：整个网页的左上角。渐隐层淡出的是「右边 + 下边」——
@@ -155,7 +159,7 @@
   --theme-bg-pos: left top;
 
   /* 与 --bodybg 同色但全透明：给渐隐层用（比直接写 transparent 更稳，不会发灰） */
-  --bodybg-0: rgba(21, 14, 22, 0);
+  --bodybg-0: rgba(23, 12, 26, 0);
 
   /* 压暗层：整张图上的薄纱，让叠在图上的文字更好读。也是整体调亮/调暗背景图的旋钮。
      ⚠️ 本图整体是中低调的室内光，薄纱别太厚，否则她的金发会发闷。
