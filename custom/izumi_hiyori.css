@@ -149,7 +149,7 @@
 
   /* 压暗层：整张图上的薄纱，让叠在图上的文字更好读。
      ⚠️ 别调太厚 —— 薄纱一厚，背景图里的人物本身也跟着糊掉。不要就改成 transparent */
-  --photo-shade: rgba(8, 5, 5, 0.26);
+  --photo-shade: rgba(8, 5, 5, 0.24);
 
   /* 站标题的"自留地"宽度：只给第 4 节的标题让位公式用（那里有详细推导）。
      24px Futura 斜体下 "the visual novel database" 在本机（Chrome/Win）实测宽 291px，
