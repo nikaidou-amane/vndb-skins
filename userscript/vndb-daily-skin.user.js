@@ -2,7 +2,7 @@
 // @name         VNDB Daily Skin
 // @name:zh-CN   VNDB 每日皮肤
 // @namespace    https://github.com/nikaidou-amane/vndb-skins
-// @version      2.0.1
+// @version      2.2.0
 // @description  按本地日期在 vndb-skins/custom/ 的多套主题之间轮换；document-start 同步注入，不再先闪默认皮肤
 // @author       nikaidou-amane
 // @match        https://vndb.org/*
@@ -20,6 +20,9 @@
    用法
    --------------------------------------------------------------------------
    默认：按「本地日期」轮换。同一天内所有页面/刷新都是同一套，跨过本地 0 点换下一套。
+   选序规则（**不是**固定顺序）：每 10 天算一个「块」，块内是全部主题的随机排列
+   → 每 10 天里每套主题正好出现一次，但块与块之间的先后顺序都不一样；
+   并且保证【相邻两天不会是同一套】。
 
    手动指定（按优先级，URL 参数 > 控制台持久设置）：
      · URL 参数（只影响当次加载）
@@ -60,6 +63,9 @@
      3. 主题里的背景图是外链图片 → CSP 的 img-src * 放行，没问题。
 
    ⚠️ 维护
+     · 【加减主题】只改配置里的 THEMES 数组（name = custom/ 下的文件名去掉 .css），
+       再把 CDN_BASES 的 SHA 换成包含新文件的 commit。
+       ⚠️ 新增/删除主题会让"哪天用哪套"整体重排（块长 = 主题数量，会跟着变），这是必然的，不是 bug。
      · 【主题 CSS】CDN 里钉的是 commit SHA：jsDelivr 对 @<sha> 回 max-age=31536000 immutable
        （浏览器一年只下一次，性能最好），代价是改了主题样式要手动把下面的 SHA 换成新 commit。
        ⚠️ 别给主题改成 @main：分支引用是 7 天缓存，改了要等一周；本脚本 v2 又会把 CSS 缓存在
@@ -84,22 +90,28 @@
      --------------------------------------------------------------------- */
 
   /** 主题仓库（只有这个仓库的 custom/ 会被加载）。SHA 要对上 commit，
-      改动 custom/ 里的主题后要一起换（当前 = "feat: add css"）。 */
+      改动 custom/ 里的主题后要一起换（当前 = "fix: tweak color of tobisawa_misaki"，
+      已包含全部 10 套主题）。 */
   const CDN_BASES = [
-    'https://fastly.jsdelivr.net/gh/nikaidou-amane/vndb-skins@83ce9f53d649e1c9f15a4469e8e01a5ab422183b/custom/',
-    'https://cdn.jsdelivr.net/gh/nikaidou-amane/vndb-skins@83ce9f53d649e1c9f15a4469e8e01a5ab422183b/custom/',
+    'https://fastly.jsdelivr.net/gh/nikaidou-amane/vndb-skins@ecca06d731d22f7fac3cfd83383f054d896ed6d5/custom/',
+    'https://cdn.jsdelivr.net/gh/nikaidou-amane/vndb-skins@ecca06d731d22f7fac3cfd83383f054d896ed6d5/custom/',
   ];
 
-  /** 轮换顺序：THEMES[天数 % THEMES.length]，改顺序 = 改哪天用哪套。
-      注意加主题会重排整个周期（因为是 day % N），不是只在末尾多一天。
-      按目录名排序，和 custom/ 下的文件名一致。 */
+  /** 主题清单：name 就是 custom/ 下的文件名去掉 .css，按目录名排序。
+      加/删主题只改这个数组。⚠️ 主题数量 N 参与选序，增删会重排之后所有日期的安排
+      （必然如此：要让"相邻两天不同"，选序就得知道 N）。 */
   const THEMES = [
-    { name: 'arise_kaguya',   file: 'arise_kaguya.css'   },
-    { name: 'himeno_towa',    file: 'himeno_towa.css'    },
-    { name: 'izumi_hiyori',   file: 'izumi_hiyori.css'   },
-    { name: 'miyaguni_akari', file: 'miyaguni_akari.css' },
-    { name: 'nabari_anju',    file: 'nabari_anju.css'    },
-  ];
+    'arise_kaguya',
+    'himeno_towa',
+    'izumi_hiyori',
+    'koizuka_mana',
+    'miyaguni_akari',
+    'nabari_anju',
+    'niimi_sora',
+    'nikaidou_shinku',
+    'sorakado_ao',
+    'tobisawa_misaki',
+  ].map(name => ({ name, file: `${name}.css` }));
 
   /** 官方皮肤名。三套主题都是照着它（Angelic Serenade）的变量体系写的，
       换别的官方皮肤时变量名/结构对不上，脚本会提醒一句。 */
@@ -118,6 +130,66 @@
     const tzOffsetMs = new Date().getTimezoneOffset() * 60 * 1000;
     return Math.floor((Date.now() - tzOffsetMs) / 86400000);
   };
+
+  /* ---------------------------------------------------------------------
+     选序：哪一天用哪一套
+     · 分块置乱：每 THEME_COUNT 天算一个「块」，块内是全部主题的一个**随机排列**
+       → 每 N 天里每套主题正好出现一次，但先后顺序每块都不一样（不是固定列表）。
+     · 相邻两天必然不同：块内是排列，天然不重复；跨块边界时如果“下一块第一天”
+       正好等于“上一块最后一天”，就把下一块的头两个换一下（交换后仍是合法排列）。
+     · 代价：块边界要依赖上一块的结果，所以从锚点（1970-01-01 = 第 0 块）推过来。
+       块内用 mulberry32 + Fisher-Yates，N=10 时约 2000 块 × 10 次交换。
+     · 同一天永远同一套（完全可复现，不用 Math.random）。
+     --------------------------------------------------------------------- */
+
+  /** 32 位整数 hash：给每块生成 PRNG 种子（纯整数运算、可复现） */
+  const hash32 = n => {
+    let x = n | 0;
+    x = Math.imul(x ^ (x >>> 16), 0x45d9f3b);
+    x = Math.imul(x ^ (x >>> 16), 0x45d9f3b);
+    return (x ^ (x >>> 16)) >>> 0;
+  };
+
+  const THEME_COUNT = THEMES.length;
+
+  /** mulberry32：由种子决定一个可复现的 [0,1) 伪随机序列 */
+  const rng = seed => () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = seed;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+
+  /** 第 block 块的主题下标排列（Fisher-Yates，种子 = 块号） */
+  const blockOrder = block => {
+    const rand = rng(hash32(block));
+    const a = Array.from({ length: THEME_COUNT }, (_, i) => i);
+    for (let i = THEME_COUNT - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
+
+  /** 第 day 天用第几套（0-based） */
+  const pickIndex = day => {
+    if (THEME_COUNT < 2 || day < 0) return 0;
+    const block = Math.floor(day / THEME_COUNT);
+    let prevLast = -1;
+    for (let b = 0; b <= block; b++) {
+      const order = blockOrder(b);
+      if (order[0] === prevLast) {                  // 跨块撞了 → 换头两个，仍保证相邻两天不同
+        [order[0], order[1]] = [order[1], order[0]];
+      }
+      prevLast = order[THEME_COUNT - 1];
+      if (b === block) return order[day % THEME_COUNT];
+    }
+    return 0;
+  };
+
+  /** 第 day 天该用哪一套主题 */
+  const themeForDay = day => THEMES[pickIndex(day)];
 
   /** 没缓存、需要下载时：先把页面藏起来（避免露默认皮肤）；false = 宁可闪一下也不要空白 */
   const HIDE_WHILE_LOADING = true;
@@ -277,7 +349,7 @@
         : { action: 'unknown', choice };
     }
     const day = localDayIndex();
-    return { action: 'load', theme: THEMES[day % THEMES.length], why: `按天轮换（第 ${day} 天 % ${THEMES.length}）` };
+    return { action: 'load', theme: themeForDay(day), why: `按天轮换（第 ${day} 天，分块置乱）` };
   };
 
   /** 注入完之后：检查官方皮肤名（那时 <link> 才存在）+ 后台预取明天那套 */
@@ -294,7 +366,7 @@
 
     // 只在“按天轮换”时预取：手动固定了某一套就没必要（那套已经在缓存里了）
     if (!pick.why.startsWith('按天轮换')) return;
-    const next = THEMES[(localDayIndex() + 1) % THEMES.length];
+    const next = themeForDay(localDayIndex() + 1);
     const urls = CDN_BASES.map(base => base + next.file);
     if (urls.some(u => cacheGet(u))) return;
     const go = () => fetchText(urls).then(r => cacheSet(r.url, r.text)).catch(() => { /* ignore */ });
@@ -349,7 +421,7 @@
 
   const api = {
     list:  () => THEMES.map(t => t.name),
-    today: () => THEMES[localDayIndex() % THEMES.length].name,
+    today: () => themeForDay(localDayIndex()).name,
     apply: async name => { ls.set(name); await start(); },
     auto:  async () => { ls.set(''); await start(); },
     off:   async () => { ls.set('off'); removeStyle(); reveal(); console.info(`${TAG} 已停用（vndbSkin.auto() 恢复）`); },
