@@ -90,8 +90,8 @@
         两套主题的页面底色等于同一个色。明度阶梯（各条的 L）沿用旧版，只补了色相与彩度。 */
   --bodybg:     #12040c;                 /* 酒红黑：图片滚走后的页面底色 */
   --boxbg:      rgba(38, 18, 30, 0.75);  /* 半透明酒红黑卡片（想让背景图更多地透出来就调低，如 0.85） */
-  --tabbg:      #2a1521bf;               /* 未选中标签页 */
-  --secbg:      #321b28e5;               /* 输入框 / 表头 */
+  --tabbg:      #2a1521c5;               /* 未选中标签页 */
+  --secbg:      #321b28cc;               /* 输入框 / 表头 */
   --secborder:  #734f63;
   --border:     #482e3d;
 
@@ -149,6 +149,7 @@
         所以也换成 S 曲线。
      ⚠️ 下面几档里的 rgba(18, 4, 12, …) 的 RGB 必须和 --bodybg 一致，改底色时一起改。
      各档透明度按 smoothstep 取值（t=0.06/0.15/0.30/0.50/0.70/0.85/0.94）。 */
+  --theme-bg-fade-y: 10%;
   --theme-fade-stops:
     var(--bodybg) 0%,
     rgba(18, 4, 12, 0.990) calc(var(--theme-bg-fade) * 0.06),
@@ -160,17 +161,28 @@
     rgba(18, 4, 12, 0.010) calc(var(--theme-bg-fade) * 0.94),
     var(--bodybg-0) var(--theme-bg-fade);
 
+  --theme-fade-stops-y:
+    var(--bodybg) 0%,
+    rgba(4, 11, 24, 0.990) calc(var(--theme-bg-fade-y) * 0.06),
+    rgba(4, 11, 24, 0.939) calc(var(--theme-bg-fade-y) * 0.15),
+    rgba(4, 11, 24, 0.811) calc(var(--theme-bg-fade-y) * 0.30),
+    rgba(4, 11, 24, 0.500) calc(var(--theme-bg-fade-y) * 0.50),
+    rgba(4, 11, 24, 0.189) calc(var(--theme-bg-fade-y) * 0.70),
+    rgba(4, 11, 24, 0.061) calc(var(--theme-bg-fade-y) * 0.85),
+    rgba(4, 11, 24, 0.010) calc(var(--theme-bg-fade-y) * 0.94),
+    var(--bodybg-0) var(--theme-bg-fade-y);
+
   /* 图片位置：整个网页的右上角。
      ⚠️ 靠右放时，渐隐层必须是「左 + 下」淡出（第 2 节的 to right / to top）——
         淡出的那一侧必须是被页面边缘包住的那一侧，否则会露出一条硬边。 */
-  --theme-bg-pos: left top;
+  --theme-bg-pos: right top;
 
   /* 与 --bodybg 同色但全透明：给渐隐层用（比直接写 transparent 更稳，不会发灰） */
   --bodybg-0: rgba(18, 4, 12, 0);
 
   /* 压暗层：整张图上的薄纱，让叠在图上的文字更好读。
      ⚠️ 别调太厚 —— 薄纱一厚，背景图里的人物本身也跟着糊掉。不要就改成 transparent */
-  --photo-shade: rgba(8, 5, 5, 0.24);
+  --photo-shade: rgba(8, 5, 5, 0.28);
 
   /* 站标题的"自留地"宽度：只给第 4 节的标题让位公式用（那里有详细推导）。
      24px Futura 斜体下 "the visual novel database" 在本机（Chrome/Win）实测宽 291px，
@@ -198,8 +210,8 @@ body {
      不要改回 `linear-gradient(var(--bodybg), var(--bodybg-0) var(--theme-bg-fade))`
      那种两端线性的写法 —— 那样图片边缘会出现一条马赫带硬边（推导见第 1 节）。 */
   background-image:
-    linear-gradient(to left, var(--theme-fade-stops)),
-    linear-gradient(to top,   var(--theme-fade-stops)),
+    linear-gradient(to right, var(--theme-fade-stops)),
+    linear-gradient(to top,   var(--theme-fade-stops-y)),
     var(--theme-bg);
   /* ⚠️ 两层渐隐层都比图片各外扩 4px —— 专门用来修「图片边缘有一条 1px 亮线」。
      成因：宽度用 vw 时很容易落在小数像素上（1365 宽的窗口 50vw = 682.5），这时 Chrome 会把
