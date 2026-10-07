@@ -101,7 +101,7 @@
         换图时顺手把 SHA 和文件名一起改掉即可 —— 文件名里的 -139c2133… 本身就是内容哈希，
         换图必然要改 URL，所以固定版本不增加任何维护成本。 */
   --theme-bg:
-    url("https://fastly.jsdelivr.net/gh/nikaidou-amane/assets@a917856e30ce899559117693192cdd7f386c08ab/ambitious_mission/arise_kaguya-139c2133d3be2188569c76c48883b46b737de7a6.png@1192w.avif");
+    url("https://fastly.jsdelivr.net/gh/nikaidou-amane/vn-assets@a917856e30ce899559117693192cdd7f386c08ab/ambitious_mission/arise_kaguya-139c2133d3be2188569c76c48883b46b737de7a6.png@1192w.avif");
 
   /* 图片尺寸：「宽度」是主变量，只调 --theme-bg-w 一处，高度自动算出来。
      50vw = 宽度取视口宽度的 50%（1440 宽的屏幕 → 宽 720px；390 宽的手机 → 宽 195px）。

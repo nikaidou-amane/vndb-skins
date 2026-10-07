@@ -98,7 +98,7 @@
         换图时**必须换 SHA**（文件名可以沿用，仓库里就是拿同一个名字覆盖了旧内容）——
         只改文件名不改 SHA 的话，浏览器认 SHA 缓存，一年内都会拿到旧图。 */
   --theme-bg:
-    url("https://fastly.jsdelivr.net/gh/nikaidou-amane/assets@4ca31b669e473c5eb88dfc72eccb6786cb08d3b2/soreyori_no_prologue/himeno_towa-2e7bb075f3342352b8eb96454106d4d91faa96af.jpg@1192w_1490h.avif");
+    url("https://fastly.jsdelivr.net/gh/nikaidou-amane/vn-assets@4ca31b669e473c5eb88dfc72eccb6786cb08d3b2/soreyori_no_prologue/himeno_towa-2e7bb075f3342352b8eb96454106d4d91faa96af.jpg@1192w_1490h.avif");
 
   /* 图片尺寸：「宽度」是主变量，只调 --theme-bg-w 一处，高度自动算出来。
      ⚠️ 本图是**竖构图**（1192×1420），所以这里只取 30vw ——

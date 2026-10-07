@@ -115,7 +115,7 @@
      ⚠️ 这个文件名被换过内容：@122aba3d 里是**转过 90° 的竖版**，旧的横版挂在 @ebed563e 上。
         两个 SHA 不同，所以新旧两份缓存互不干扰，改 SHA 就等于强制刷新。 */
   --theme-bg:
-    url("https://fastly.jsdelivr.net/gh/nikaidou-amane/assets@122aba3d610c77934c11ceb58e3e4f6184ac4e98/hamikuri/izumi_hiyori-f38f3ecb31032c4da16c0322f944a51c7c131cd9.png@1192w.avif");
+    url("https://fastly.jsdelivr.net/gh/nikaidou-amane/vn-assets@122aba3d610c77934c11ceb58e3e4f6184ac4e98/hamikuri/izumi_hiyori-f38f3ecb31032c4da16c0322f944a51c7c131cd9.png@1192w.avif");
 
   /* 图片尺寸：「宽度」是主变量，只调 --theme-bg-w 一处，高度自动算出来。
      50vw = 宽度取视口宽度的 50%（1440 宽的屏幕 → 宽 720px、高 1279px；

@@ -84,7 +84,7 @@
         换图时顺手改这里就行 —— 文件名本身就是内容哈希，换图必然要改 URL，
         所以固定版本不增加任何维护成本。 */
   --theme-bg:
-    url("https://fastly.jsdelivr.net/gh/nikaidou-amane/assets@e8912cf91f860414ef791d33d0d1f0699c355442/senmomo/miyaguni_akari-c428243210489f9f3adbd49b66ba51bcf6c0d349.avif");
+    url("https://fastly.jsdelivr.net/gh/nikaidou-amane/vn-assets@e8912cf91f860414ef791d33d0d1f0699c355442/senmomo/miyaguni_akari-c428243210489f9f3adbd49b66ba51bcf6c0d349.avif");
 
   /* 图片尺寸：「宽度」是主变量，只调 --theme-bg-w 一处，高度自动算出来。
      40vw = 宽度取视口宽度的 40%（1440 宽的屏幕 → 宽 576px；390 宽的手机 → 宽 156px）。

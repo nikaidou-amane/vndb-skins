@@ -102,7 +102,7 @@
         换图时顺手把 SHA 和文件名一起改掉即可 —— 文件名里的 -6ae98a37… 本身就是内容哈希，
         换图必然要改 URL，所以固定版本不增加任何维护成本。 */
   --theme-bg:
-    url("https://fastly.jsdelivr.net/gh/nikaidou-amane/assets@74c14ac9867b0004a5386caf82218eb9db34d9b5/lllj/nabari_anju-6ae98a378fc209a4cf5e8447dae99154160254380.png@1192w.avif");
+    url("https://fastly.jsdelivr.net/gh/nikaidou-amane/vn-assets@74c14ac9867b0004a5386caf82218eb9db34d9b5/lllj/nabari_anju-6ae98a378fc209a4cf5e8447dae99154160254380.png@1192w.avif");
 
   /* 图片尺寸：「宽度」是主变量，只调 --theme-bg-w 一处，高度自动算出来。
      50vw = 宽度取视口宽度的 50%（1440 宽的屏幕 → 宽 720px；390 宽的手机 → 宽 195px）。

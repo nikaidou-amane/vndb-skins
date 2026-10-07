@@ -132,7 +132,7 @@
         所以 jsDelivr 回 `max-age=31536000, immutable`，浏览器一年内连刷新都不发请求。
         换图时顺手把 SHA 和文件名一起改掉即可 —— 文件名里的 -d832410d… 本身就是内容哈希。 */
   --theme-bg:
-    url("https://fastly.jsdelivr.net/gh/nikaidou-amane/assets@09d23d6637df337dbc4b1c7caa32ca99cb95843a/9nine/niimi_sora-d832410d4af4081d6fc1f96b9c86d392b5bb2a2d.png@1192w.avif");
+    url("https://fastly.jsdelivr.net/gh/nikaidou-amane/vn-assets@09d23d6637df337dbc4b1c7caa32ca99cb95843a/9nine/niimi_sora-d832410d4af4081d6fc1f96b9c86d392b5bb2a2d.png@1192w.avif");
 
   /* 图片尺寸：「宽度」是主变量，只调 --theme-bg-w 一处，高度自动算出来。
      40vw = 宽度取视口宽度的 40%（1440 宽的屏幕 → 宽 576px、高 365px；
