@@ -30,8 +30,10 @@
   /* 主题 CSS 注入器：.agent/tools/ → 仓库根目录，往上两级。
      用法（控制台 / playwright）：await __loadTheme("mochizuki_amane") */
   window.__loadTheme = async function (name) {
+    /* 绕过 HTTP 缓存：否则改了 css 再调一次还是拿到旧内容 */
+    const stamp = Date.now();
     for (const base of ["../../", "/vndb-skins/"]) {
-      const r = await fetch(base + "custom/" + name + ".css").catch(() => null);
+      const r = await fetch(base + "custom/" + name + ".css?t=" + stamp, { cache: "no-store" }).catch(() => null);
       if (r && r.ok) {
         document.getElementById("theme").textContent = await r.text();
         document.body.dataset.theme = name;

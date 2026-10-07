@@ -117,6 +117,10 @@
 - 站标题让位：
   - 图靠左：`--title-space` 写法
   - 图靠右：`padding-right: max(30px, calc(var(--theme-bg-w) + var(--title-gap) - 10px))`
+  - ⚠️ **图靠右只准这一条式子**（18 套已于 2026-10-07 统一）：不要再写
+    `min(图片宽 + 10px, 100% − …)` 那种"封顶"变体，也不要掺 `calc(100% - 700px)` 的官方位置 ——
+    它们会让标题停在离图很远的老位置上（`himeno_towa` 约 200px、`izumi_hiyori` 约 460px）。
+    上面那条式子的空隙恒为 `--title-gap + 20px`（20px 是替 body 内边距多留的），与图片宽度无关。
   - 窄屏故意允许标题压图（图在文字后，靠 text-shadow 保证可读），**这是设计行为不是 bug**。
 
 ---
@@ -188,6 +192,11 @@
   再加一个绝对路径 `/vndb-skins/…` 作备选，防"服务器根不是 `d:\Projects`"。
   `_harness.html` 已把注入封装成 `window.__loadTheme("mochizuki_amane")`，别再手写路径。
   服务器如果跑在 `d:\Projects`，直接开：`http://127.0.0.1:8123/vndb-skins/.agent/tools/_skins_overview.html`。
+  ⚠️ **工具页里读 css 的 `fetch` 必须破缓存**：`fetch(url + "?t=" + 时间戳, {cache:"no-store"})`，
+  否则浏览器按 HTTP 缓存直接复用旧响应 —— 症状就是「**改了 css，刷新速览页还是旧颜色**」
+  （而且色板与 iframe 是两次独立请求，可能出现一个新一个旧）。
+  速览页顶部会显示「本次计算于 `<时间>`」：**这个时间没变 ⇒ 被缓存的是页面自己** ⇒ `Ctrl+Shift+R` 强制刷新。
+  同理 `_skin_mock.html` 吃速览页传来的 `?t=`，`_harness.html` 每次 `__loadTheme()` 自己取一个新时间戳。
   速览页的做法：`iframe` 固定 1280×660 的视口，外层用 `transform: scale(0.33)` 缩到 424×218 ——
   这样看的是**真实布局**（40vw 就是 512px、站标题也是被 189px 高的 header 规则约束的），不是另画一张示意图。
 - **渐隐验收（2026-10 新增的方法）**：用 `_harness.html`（官方 `angel.css` + `body>header>h1` 的真实结构），
@@ -206,33 +215,50 @@
 ## 10. 现状快照
 
 > 这张表是给配色决策用的，**改了颜色/主题就更新它**。
+> 数据不是手抄的：打开 `.agent/tools/_skins_overview.html`，它直接读各 css 的 `:root` 现算（表里最后三列就是 §3.4 的三条硬指标）。
 
-| 主题 | `--bodybg` | bg 色相 | `--link` | link 色相 | 色相差 | 图位置 | bg-w |
-|---|---|---|---|---|---|---|---|
-| arise_kaguya | `#120c2c` | 287.3° | `#b59dff` | 294.1° | 6.7° | right top | 42vw |
-| araya_touka | `#020b26` | 262.7° | `#80bdfb` | 249.8° | 12.9° | left top | 42vw |
-| enamori_senri | `#020e21` | 255.4° | `#71c9fa` | 234.8° | 20.6° | right top | 42vw |
-| himeno_towa | `#06121c` | 244.2° | `#7cc8f0` | 232.6° | 11.6° | right top | 32vw |
-| izumi_hiyori | `#12040c` | 344.5° | `#ff9192` | 20.0° | 35.5° | right top | 25vw |
-| kazami_yui | `#000d14` | 226.8° | `#53cfdc` | 204.9° | 21.9° | right top | 38vw |
-| koizuka_mana | `#200f07` | 46.2° | `#e6b06a` | 72.4° | 26.1° | left top | 32vw |
-| misakura_rin | `#150516` | 325.3° | `#f5a1dd` | 337.9° | 12.6° | left top | 40vw |
-| miyaguni_akari | `#1c0810` | 356.3° | `#ff9ec5` | 354.6° | 1.8° | right top | 32vw |
-| mochizuki_amane | `#00101b` | 235.9° | `#60ceef` | 220.5° | 15.4° | right top | 40vw |
-| nabari_anju | `#0c0615` | 301.7° | `#cfa9e0` | 315.3° | 13.5° | left top | 42vw |
-| naitou_maia | `#1a0210` | 346.2° | `#ffa0ac` | 11.7° | 25.5° | right top | 42vw |
-| niimi_sora | `#0e0c20` | 285.7° | `#9aafff` | 272.2° | 13.6° | left top | 32vw |
-| nikaidou_shinku | `#170c1a` | 318.9° | `#ee8bd5` | 337.0° | 18.2° | left top | 42vw |
-| nikaidou_shinku_2 | `#071735` | 261.3° | `#5fc8ff` | 234.3° | 27.1° | right top | 42vw |
-| sorakado_ao | `#040b18` | 258.4° | `#6fb0f5` | 251.1° | 7.3° | left top | 40vw |
-| tobisawa_misaki | `#04140a` | 156.0° | `#a6c95f` | 124.7° | 31.3° | right top | 42vw |
-| yonagi | `#170705` | 30.7° | `#f3ad6d` | 62.4° | 31.7° | right top | 28vw |
-| yugyouji_yoruko | `#0d091f` | 288.7° | `#9ebdff` | 264.8° | 23.9° | right top | 40vw |
+| 主题 | `--bodybg` | bg 色相 | `--link` | link 色相 | 色相差 | ΔE 正文 | ΔE 弱化 | 对比 页底 | 图位置 | bg-w |
+|---|---|---|---|---|---|---|---|---|---|---|
+| araya_touka | `#020b26` | 262.7° | `#80bdfb` | 249.8° | 12.9° | 23.1 | 19.2 | 9.91 | left top | 35vw |
+| arise_kaguya | `#120c2c` | 287.3° | `#b59dff` | 294.1° | 6.7° | 24.3 | 20.7 | 8.54 | right top | 42vw |
+| enamori_senri | `#020e21` | 255.4° | `#71c9fa` | 234.8° | 20.6° | 22.9 | 20.7 | 10.73 | right top | 42vw |
+| himeno_towa | `#06121c` | 244.2° | `#7cc8f0` | 232.6° | 11.6° | ⚠️19.9 | ⚠️12.8 | 10.46 | right top | 32vw |
+| izumi_hiyori | `#12040c` | 344.5° | `#ff9192` | 20.0° | 35.5° | 28.4 | 20.6 | 9.36 | right top | 25vw |
+| kazami_yui | `#000d14` | 226.8° | `#53cfdc` | 204.9° | 21.9° | 24.5 | 21.9 | 10.72 | right top | 38vw |
+| koizuka_mana | `#200f07` | 46.2° | `#e6b06a` | 72.4° | 26.1° | 22.8 | ⚠️17.5 | 9.79 | left top | 32vw |
+| misakura_rin | `#150516` | 325.3° | `#f5a1dd` | 337.9° | 12.6° | 25.5 | 23.1 | 10.47 | right top | 42vw |
+| miyaguni_akari | `#1c0810` | 356.3° | `#ff9ec5` | 354.6° | 1.8° | ⚠️21.4 | ⚠️12.9 | 10.28 | right top | 32vw |
+| mochizuki_amane | `#00101b` | 235.9° | `#60ceef` | 220.5° | 15.4° | 22.7 | 20.7 | 10.82 | left top | 42vw |
+| nabari_anju | `#0c0615` | 301.7° | `#cfa9e0` | 315.3° | 13.5° | ⚠️21.2 | ⚠️15.1 | 9.97 | left top | 42vw |
+| naitou_maia | `#1a0210` | 346.2° | `#ffa0ac` | 11.7° | 25.5° | 25.2 | 22.4 | 10.39 | right top | 42vw |
+| niimi_sora | `#0e0c20` | 285.7° | `#9aafff` | 272.2° | 13.6° | 23.1 | 20.6 | 9.31 | left top | 32vw |
+| nikaidou_shinku | `#071735` | 261.3° | `#5fc8ff` | 234.3° | 27.1° | 24.0 | 21.5 | 9.91 | right top | 42vw |
+| sorakado_ao | `#040b18` | 258.4° | `#6fb0f5` | 251.1° | 7.3° | 24.8 | ⚠️13.5 | 8.73 | left top | 40vw |
+| tobisawa_misaki | `#04140a` | 156.0° | `#a6c95f` | 124.7° | 31.3° | 32.5 | 39.8 | 10.3 | right top | 42vw |
+| yonagi | `#170705` | 30.7° | `#f3ad6d` | 62.4° | 31.7° | 25.2 | 24.0 | 10.41 | right top | 25vw |
+| yugyouji_yoruko | `#0d091f` | 288.7° | `#9ebdff` | 264.8° | 23.9° | 22.4 | 20.8 | 10.55 | right top | 42vw |
 
-（共 19 套 = 原有 11 套 + 2026-10 新加 8 套；表按主题名排序。）
+（共 **18 套**；表按主题名排序。⚠️ 上表是 2026-10-07 从 css 现算的快照 ——
+有人改了 `--theme-bg-w` / `--theme-bg-pos` / `--photo-shade` 之后**要重跑速览页再抄一遍**。）
 
-- 脚本版本 2.2.2，`CDN_BASES` SHA = `1c933613099d459135b058c644ec99ce1cd98281`，
-  `THEMES` 里是 **10 套**（`nikaidou_shinku_2` 与新增的 8 套都还没进轮换）。
+⚠️ **§3.4 的硬指标当前有 5 套不满足，且都不是 2026-10 新增的那批**：
+
+| 主题 | ΔE 正文（需 ≥22） | ΔE 弱化（需 ≥18） |
+|---|---|---|
+| himeno_towa | 19.9 ✗ | 12.8 ✗ |
+| miyaguni_akari | 21.4 ✗ | 12.9 ✗ |
+| nabari_anju | 21.2 ✗ | 15.1 ✗ |
+| koizuka_mana | 22.8 ✔ | 17.5 ✗（差 0.5） |
+| sorakado_ao | 24.8 ✔ | 13.5 ✗ |
+
+（`对比 页底` 18 套全部 ≥8.5，都过；2026-10 新增的 8 套三条全过。处置见 §11。）
+
+- `nikaidou_shinku` 现在装的是**蓝色那版**（`#071735` / `#5fc8ff`）；原先另存的
+  `nikaidou_shinku_2.css` **已经不存在**了（§1 里"变体加 `_2` 后缀"的约定保留，但当前库里没有变体）。
+  表里也不再单列那一行。
+
+- 脚本版本 **2.4.0**，`CDN_BASES` SHA = `1c933613099d459135b058c644ec99ce1cd98281`（还是只含那 10 套的旧 commit），
+  `THEMES` 里是 **10 套**（新增的 8 套还没进轮换；要进的话得先提交 css、再把 SHA 换成含它们的 commit）。
 - 未提交改动：10 套 css 的图片仓库名 `assets` → `vn-assets`；新增 8 套 css 尚未提交。
 - 新增 8 套的图片实拍尺寸：`misakura_rin`/`naitou_maia`/`enamori_senri` 1920×1080、
   `araya_touka` 1620×1080、`yonagi` 1300×1950、`yugyouji_yoruko`/`kazami_yui` 1280×720、
@@ -246,9 +272,14 @@
   不改任何已定稿的底色 / link，接受青蓝一带偏挤的现状
   （180–240° 5 套、240–300° 5 套、300–360° 4 套；同扇区底色色相差最小 9.1°）。
   以后新增主题先满足 §3.1 / §3.4，再顺手避开同扇区即可，不再当硬指标卡。
-- **新增 8 套是否进脚本 `THEMES`** —— `N` 参与选序，增删会重排之后所有日期（必然）。
-- `nikaidou_shinku_2.css` 是否进 `THEMES`（同样会重排）。
-- `arise_kaguya` / `nabari_anju` 还没换成 smoothstep 渐隐（另外 9 套已完成）。
+- **新增 8 套是否进脚本 `THEMES`** —— `N` 参与选序，增删会重排之后所有日期（必然）；
+  而且 `CDN_BASES` 的 SHA 也必须同时换成含新 css 的 commit（现在那个还是旧的）。
+- **⚠️ 5 套旧主题不满足 §3.4 的 ΔE 硬指标**（明细在 §10）：`himeno_towa` / `miyaguni_akari` / `nabari_anju`
+  两条都不过；`koizuka_mana` / `sorakado_ao` 只差"弱化"那一条（`koizuka_mana` 17.5，距 18 只差 0.5）。
+  两条路：① 把这几套的 `--grayedout`（连带 `--link`）往硬指标拉；
+  ② 像 §3.7 那样降级成"新主题必须过、旧主题尽力"。**需要拍板。**
+  ⚠️ 没拍板前不要动这 5 套的颜色 —— 它们都是已经定稿并上线的。
+- `arise_kaguya` / `nabari_anju` 还没换成 smoothstep 渐隐（另外 16 套已完成）。
 - 部分文件注释仍在讲旧参数（如 `miyaguni_akari` 的 `40vw` 残留、`niimi_sora` 的 9 处 40vw）—— 待同步。
 - ⚠️ `_pal.html` 里 `shade:[alpha, hue]` 的 **hue 已经不是下发 CSS 的实际值**了
   （例：`misakura_rin` 写 260，实际 `--photo-shade: rgba(6, 2, 7, .22)` 是 325；

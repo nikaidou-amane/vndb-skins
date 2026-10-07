@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
 <meta charset="utf-8">
-<title>新增 8 套皮肤速览</title>
+<title>全部 18 套皮肤速览</title>
 <style>
   :root { --line: #2a2f38; --dim: #8b949e; }
   html, body { margin: 0; background: #0f1216; color: #e6edf3;
@@ -45,8 +45,15 @@
              align-items: baseline; gap: 8px; }
   .tile h3 .t-name { font-family: Consolas, monospace; }
   .tile h3 .t-sub { color: var(--dim); font-size: 11px; font-weight: 400; text-align: right; }
+  /* 分组标题：表里插一行跳列、网格里插一格跳列 */
+  table.mx tr.grp td { background: #171c23; color: var(--dim); font-weight: 600;
+                       padding: 6px; border-top: 1px solid var(--line); }
+  .tiles-group { grid-column: 1 / -1; margin: 12px 0 -2px; padding: 6px 10px; background: #171c23;
+                 border-radius: 6px; color: var(--dim); font-weight: 600; font-size: 12px; }
+
   /* 视口 1280×660，scale 0.33 → 422.4×217.8 */
-  .frame { position: relative; width: 422px; height: 218px; background: #000; }  .frame iframe { position: absolute; top: 0; left: 0; width: 1280px; height: 660px;
+  .frame { position: relative; width: 422px; height: 218px; background: #000; }
+  .frame iframe { position: absolute; top: 0; left: 0; width: 1280px; height: 660px;
                   border: 0; transform: scale(0.33); transform-origin: 0 0; }
   .tile .meta { padding: 7px 12px 9px; color: var(--dim); font-size: 11px;
                 font-family: Consolas, monospace; line-height: 1.75; }
@@ -55,11 +62,15 @@
 </style>
 </head>
 <body>
-<h1>新增 8 套皮肤速览 <small>2026-10 / 与官方 <code>Angelic Serenade</code> 变量体系一致</small></h1>
+<h1>全部 18 套皮肤速览 <small>2026-10 新增 8 套 + 原有 10 套 / 与官方 <code>Angelic Serenade</code> 变量体系一致
+  &nbsp;・&nbsp; 本次计算于 <code id="stamp">…</code></small></h1>
 <p class="note">每格是把这个主题的<b>真实 CSS</b> 注入官方 <code>angel.css</code> 后缩放的整页预览（原视口 <code>1280×660</code>，缩到 33%）。
-   下面的色板与硬指标是页面加载时<b>现算</b>的：直接读各主题文件里 <code>:root</code> 的变量，再按 OKLCh / CIEDE2000 计算 ——
-   也就是说，改了 css 刷新这里就跟着变，不存在两份数据对不上的问题。</p>
+   色板、硬指标、卡片上的作品名与角色名都是加载时<b>现算／现读</b>的：颜色变量读各主题文件 <code>:root</code>，
+   角色与作品读文件头那一行 —— 改了 css 刷新这里就跟着变，不存在两份数据对不上的问题。</p>
 <p class="note">硬指标阈值：<code>ΔE(link, 正文) ≥ 22</code>、<code>ΔE(link, 弱化) ≥ 18</code>、<code>对比(link, 页底) ≥ 8</code>；达标显示绿、不达标显示黄。</p>
+<p class="note">⚠️ <b>改了 css 但这里没变？</b>本页所有取数都已强制绕过缓存（<code>fetch(url, {cache:"no-store"})</code> +
+   URL 上带 <code>?t=&lt;加载时间戳&gt;</code>），平铺里的 iframe 也带这同一个时间戳，所以色板与整页图永远取自同一版文件。
+   若标题行里「本次计算于」的时间<b>没跟着刷新变</b>，说明被缓存的是<b>本页自己</b> —— 按 <code>Ctrl+Shift+R</code> 强制刷新（或关掉标签页重开）即可。</p>
 
 <div class="bar">
   <button data-view="all" class="on">全部</button>
@@ -145,17 +156,36 @@ const over = (fg, alpha, bg) => { const f = hex2rgb(fg), b = hex2rgb(bg);
   return rgb2hex([0, 1, 2].map(i => alpha*f[i] + (1 - alpha)*b[i])); };
 const hd = (a, b) => { let d = Math.abs(a - b) % 360; return +(d > 180 ? 360 - d : d).toFixed(1); };
 
-/* ===================== 主题清单 ===================== */
-const THEMES = [
-  ["misakura_rin",    "Sakura no Uta -Sakura no Mori no Ue o Mau-"],
-  ["araya_touka",     "Tsuki no Kanata de Aimashou"],
-  ["yonagi",          "Hakuchuumu no Aojashin"],
-  ["naitou_maia",     "Hapymaher"],
-  ["yugyouji_yoruko", "Kami no Ue no Mahoutsukai"],
-  ["mochizuki_amane", "Kono Oozora ni, Tsubasa o Hirogete"],
-  ["kazami_yui",      "Parfait ~Chocolat Second Brew~"],
-  ["enamori_senri",   "PriministAr"],
+/* ===================== 主题清单（全部 18 套） =====================
+   名字必须和 custom/<name>.css 对得上；`vnEn` 是作品名的**罗马字**，
+   只在文件头取不到作品名时用来兜底（主标题优先用文件头里的作品名，副标题给罗马字）。
+   分组只为看的时候好找，不影响渲染。 */
+const GROUPS = [
+  ["2026-10 新增", [
+    ["araya_touka",     "Tsuki no Kanata de Aimashou"],
+    ["enamori_senri",   "PriministAr"],
+    ["kazami_yui",      "Parfait ~Chocolat Second Brew~"],
+    ["misakura_rin",    "Sakura no Uta -Sakura no Mori no Ue o Mau-"],
+    ["mochizuki_amane", "Kono Oozora ni, Tsubasa o Hirogete"],
+    ["naitou_maia",     "Hapymaher"],
+    ["yonagi",          "Hakuchuumu no Aojashin"],
+    ["yugyouji_yoruko", "Kami no Ue no Mahoutsukai"],
+  ]],
+  ["原有", [
+    ["arise_kaguya",    "Ambitious Mission"],
+    ["himeno_towa",     "Soreyori no Prologue"],
+    ["izumi_hiyori",    "Hamidashi Creative"],
+    ["koizuka_mana",    "Amatsutsumi"],
+    ["miyaguni_akari",  "Sen no Hatou, Tsukisome no Kouki"],
+    ["nabari_anju",     "LimeLight Lemonade Jam"],
+    ["niimi_sora",      "9-nine- Kokonotsu Kokonoka Kokonoiro"],
+    ["nikaidou_shinku", "Irotoridori no Sekai"],
+    ["sorakado_ao",     "Summer Pockets"],
+    ["tobisawa_misaki", "Ao no Kanata no Four Rhythm"],
+  ]],
 ];
+/* 拉平成一个列表：[name, vnEn, group] */
+const THEMES = GROUPS.flatMap(([g, list]) => list.map(([n, v]) => [n, v, g]));
 const CHIPS = [["bodybg","--bodybg"],["maintext","--maintext"],["grayedout","--grayedout"],["link","--link"],
                ["standout","--standout"],["boxtitle","--boxtitle"],["alttitle","--alttitle"],
                ["statok","--statok"],["statnok","--statnok"],["footer","--footer"]];
@@ -163,9 +193,14 @@ const CHIPS = [["bodybg","--bodybg"],["maintext","--maintext"],["grayedout","--g
 /* 解析：文件头那行的「角色名（原名 / VN）」+ :root 里的变量 */
 function parse(css) {
   const head = (css.match(/VNDB Custom CSS\s*—\s*([^\n]+)/) || [])[1] || "";
-  const m = head.match(/^(.+?)（(.+?)\s*\/\s*(.+?)）\s*主题\s*$/);
-  const label = m ? { role: m[1].trim(), orig: m[2].trim(), vn: m[3].trim() }
-                  : { role: head.replace(/主题\s*$/, "").trim(), orig: "", vn: "" };
+  /* 文件头有三种写法，都要认：
+     ① Name（原名 / 作品名）主题   ② Name（原名）主题 —— 没写作品名（如 miyaguni_akari）
+     ③ 认不出来就把整行当角色名 */
+  const m3 = head.match(/^(.+?)（(.+?)\s*\/\s*(.+?)）\s*主题\s*$/);
+  const m2 = head.match(/^(.+?)（(.+?)）\s*主题\s*$/);
+  const label = m3 ? { role: m3[1].trim(), orig: m3[2].trim(), vn: m3[3].trim() }
+              : m2 ? { role: m2[1].trim(), orig: m2[2].trim(), vn: "" }
+              : { role: head.replace(/主题\s*$/, "").trim(), orig: "", vn: "" };
   const body = css.replace(/\/\*[\s\S]*?\*\//g, "");
   const rootBlock = (body.match(/:root\s*\{([\s\S]*?)\}/) || [])[1] || "";
   const vars = {};
@@ -182,9 +217,15 @@ const nums = s => (s.match(/-?\d*\.?\d+/g) || []).map(Number);
 /* 主题 css 的取法：本文件在 .agent/tools/，**仓库根目录在上两级** —— 所有资源都从这条规矩出发。
    第二个候选项是绝对路径，防"服务器根不是 d:\Projects"的情况（本机实测服务器根就是 d:\Projects）。 */
 const ROOT = "../../";
+/* 破缓存：fetch 默认走浏览器 HTTP 缓存 —— 服务器给了 max-age、或只给 Last-Modified 时，
+   Chromium 会按「启发式新鲜度」直接复用旧响应，表现就是「改了 css，刷新这里还是旧颜色」
+   （而且色板与 iframe 是两次独立请求，可能一个新一个旧）。
+   no-store = 请求与响应都不进缓存；再叠一个 ?t=<时间戳> 让 URL 本身也每次不同（双保险）。
+   ⚠️ 这里的时间戳同时喂给 iframe（见下面 qs 的 t 参数），保证两张图用的是同一版文件。 */
+const STAMP = Date.now();
 async function fetchCss(rel) {
   for (const base of [ROOT, "/vndb-skins/"]) {
-    try { const r = await fetch(base + rel); if (r.ok) return await r.text(); } catch (e) { /* 下一个 */ }
+    try { const r = await fetch(base + rel + "?t=" + STAMP, { cache: "no-store" }); if (r.ok) return await r.text(); } catch (e) { /* 下一个 */ }
   }
   throw new Error("载入失败: " + ROOT + rel);
 }
@@ -193,7 +234,7 @@ async function fetchCss(rel) {
 (async function main() {
   const data = [];
   const failed = [];
-  for (const [name, vnEn] of THEMES) {
+  for (const [name, vnEn, group] of THEMES) {
     let css;
     try { css = await fetchCss("custom/" + name + ".css"); }
     catch (e) { failed.push(name); continue; }
@@ -204,14 +245,16 @@ async function fetchCss(rel) {
     const pn = nums(vars["photo-shade"] || "rgba(0,0,0,0)");
     const pageBase = pn.length === 4 ? over(oklch2hex(0.10, 0.025, bH), pn[3], c.bodybg) : c.bodybg;
     data.push({
-      name, vnEn, label, c, bH: +bH.toFixed(1), lH: +lH.toFixed(1), dH: hd(lH, bH),
+      name, vnEn, group, label, c, bH: +bH.toFixed(1), lH: +lH.toFixed(1), dH: hd(lH, bH),
       dE_mt: +de00(c.link, c.maintext).toFixed(1),
       dE_go: +de00(c.link, c.grayedout).toFixed(1),
       cr: cr(c.link, pageBase),
       bgW: (vars["theme-bg-w"] || "").trim(),
       pos: (vars["theme-bg-pos"] || "").trim(),
-      fade: (vars["theme-bg-fade"] || "").trim() + " / " + (vars["theme-bg-fade-y"] || "").trim(),
+      fade: (vars["theme-bg-fade"] || "").trim()
+            + (vars["theme-bg-fade-y"] ? " / " + vars["theme-bg-fade-y"].trim() : ""),
       shade: pn.length === 4 ? pn[3] : "",
+      shadeRaw: pn.length === 4 ? (vars["photo-shade"] || "").trim() : "",
       lL: +lL.toFixed(3), lC: +lC.toFixed(3), bL: +bL.toFixed(3),
     });
   }
@@ -220,10 +263,19 @@ async function fetchCss(rel) {
   const mx = document.createElement("table");
   mx.className = "mx";
   const head = ["主题"].concat(CHIPS.map(([, v]) => v))
-                          .concat(["色相差", "ΔE 正文", "ΔE 弱化", "对比 页底", "位置", "bg-w", "渐隐", "薄纱"]);
+                          .concat(["色相差", "ΔE 正文", "ΔE 弱化", "对比 页底", "位置", "bg-w", "渐隐", "薄纱 α"]);
   mx.innerHTML = "<thead><tr>" + head.map(h => `<th>${h}</th>`).join("") + "</tr></thead><tbody></tbody>";
   const tb = mx.querySelector("tbody");
+  const COLS = head.length;                 /* 分组标题行要跳满列 */
+  let lastGroup = null;
   for (const d of data) {
+    if (d.group !== lastGroup) {
+      lastGroup = d.group;
+      const gr = document.createElement("tr");
+      gr.className = "grp";
+      gr.innerHTML = `<td colspan="${COLS}">${d.group} · ${data.filter(x => x.group === d.group).length} 套</td>`;
+      tb.appendChild(gr);
+    }
     const tr = document.createElement("tr");
     tr.innerHTML = `<td class="name">${d.name}<br><span>${d.label.role}</span></td>`
       + CHIPS.map(([k]) => `<td><div class="sw" style="background:${d.c[k]}" title="${d.c[k]}"></div><div class="hx">${d.c[k]}</div></td>`).join("")
@@ -231,7 +283,8 @@ async function fetchCss(rel) {
       + `<td class="num ${d.dE_mt >= 22 ? "pass" : "warn"}">${d.dE_mt}</td>`
       + `<td class="num ${d.dE_go >= 18 ? "pass" : "warn"}">${d.dE_go}</td>`
       + `<td class="num ${d.cr >= 8 ? "pass" : "warn"}">${d.cr}</td>`
-      + `<td class="num">${d.pos}</td><td class="num">${d.bgW}</td><td class="num">${d.fade}</td><td class="num">${d.shade}</td>`;
+      + `<td class="num">${d.pos}</td><td class="num">${d.bgW}</td><td class="num">${d.fade}</td>`
+      + `<td class="num" title="${d.shadeRaw}">${d.shade === "" ? "—" : d.shade}</td>`;
     tb.appendChild(tr);
   }
   document.getElementById("matrix-wrap").appendChild(mx);
@@ -245,10 +298,30 @@ async function fetchCss(rel) {
 
   /* ---- 整页预览 ---- */
   const wrap = document.getElementById("tiles-wrap");
+  let tileGroup = null;
   for (const d of data) {
-    const qs = new URLSearchParams({ theme: d.name, title: d.vnEn, alt: d.label.vn });
+    if (d.group !== tileGroup) {
+      tileGroup = d.group;
+      const gh = document.createElement("div");
+      gh.className = "tiles-group";
+      gh.textContent = `${d.group} · ${data.filter(x => x.group === d.group).length} 套`;
+      wrap.appendChild(gh);
+    }
+    /* t = 本页的加载时间戳：iframe 的 URL 每次刷新都不同 → 连 iframe 文档本身也不会被复用，
+       且 _skin_mock.html 会用这个值去取 css（那边也带 no-store），两边版本必然一致。 */
+    /* 预览页里的主副标题 = **作品名**：主标题（`#mk-title` / h1）= 日文原名（各 css 文件头第 3 段），
+       副标题（`#mk-alt` / h2.alttitle）= 罗马字（THEMES 里那条）。
+       ⚠️ mock 的契约仍是 title = 主 / alt = 副，所以这里只是把两个值换了位。
+       ⚠️ 有 3 套（naitou_maia / kazami_yui / enamori_senri）文件头第 3 段写的就是作品名的**罗马字**，
+          取不到日文原名 → 这时主标题就用那唯一的标题、**副标题留空**（否则两行一模一样）。
+          补齐办法：把那 3 个文件头第 3 段换成日文原名，这里自动生效。 */
+    const vnMain = d.label.vn || d.vnEn;
+    const vnSub = vnMain === d.vnEn ? "" : d.vnEn;
+    const qs = new URLSearchParams({ theme: d.name, title: vnMain, alt: vnSub, t: STAMP });
     const t = document.createElement("div");
     t.className = "tile";
+    /* 卡片自己的表头：主 = 主题文件名（misakura_rin —— 要改 css 时找的就是它），
+       副 = 角色罗马字 ・ 日文原名。 */
     t.innerHTML = `<h3><span class="t-name">${d.name}</span>
                      <span class="t-sub">${d.label.role}${d.label.orig ? " ・ " + d.label.orig : ""}</span></h3>
       <div class="frame"><iframe loading="lazy" src="_skin_mock.html?${qs}" scrolling="no"></iframe></div>
@@ -256,7 +329,7 @@ async function fetchCss(rel) {
         <a href="_skin_mock.html?${qs}" target="_blank">单独打开 &nearr;</a>
         <b>bg</b> ${d.c.bodybg} L${d.bL} H${d.bH}° &nbsp; <b>link</b> ${d.c.link} L${d.lL} C${d.lC} H${d.lH}°<br>
         <b>色相差</b> ${d.dH}° &nbsp; <b>ΔE</b> 正文 ${d.dE_mt} / 弱化 ${d.dE_go} &nbsp; <b>对比</b> ${d.cr}:1<br>
-        <b>图</b> ${d.pos} ・ ${d.bgW} ・ 渐隐 ${d.fade} &nbsp; ${d.vnEn}
+        <b>图</b> ${d.pos} ・ ${d.bgW} ・ 渐隐 ${d.fade} ・ <b>薄纱</b> <span title="--photo-shade: ${d.shadeRaw}">α${d.shade === "" ? "—" : d.shade}</span> &nbsp; ${d.vnEn}
       </div>`;
     wrap.appendChild(t);
   }
@@ -268,7 +341,10 @@ async function fetchCss(rel) {
       document.body.className = b.dataset.view === "all" ? "" : "v-" + b.dataset.view;
     };
   }
-  document.title = "新增 8 套皮肤速览";
+  document.title = "全部 18 套皮肤速览";
+  /* 右上角那个时间戳：它变了才算拿到新文件；没变就是本页被缓存了（见文件头的说明） */
+  const st = document.getElementById("stamp");
+  if (st) st.textContent = new Date(STAMP).toLocaleTimeString();
 })();
 </script>
 </body>

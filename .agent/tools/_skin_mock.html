@@ -23,7 +23,9 @@
   .mk-nok  { color: var(--statnok); }
   .mk-ft   { color: var(--footer); }
 
-  .mk-card { background: var(--boxbg); border: 1px solid var(--border); padding: 6px 9px; margin: 8px 0; }
+  /* ⚠️ 这里**刻意没有** .mk-card 这种自定义盒子 —— 主内容那一格用真 <article>，
+     背景 / 边框 / 内边距全部交给官方 CSS（主题只改变量），这样才和真站一致。
+     自定义盒子会把官方规则盖掉（类的特异性高于元素选择器）。 */
   .mk-sec  { background: var(--secbg); border: 1px solid var(--secborder); padding: 4px 8px; margin: 8px 0; }
   .mk-tabc { display: inline-block; background: var(--tabbg); border: 1px solid var(--border); border-bottom: none; padding: 2px 10px; }
   .mk-h2   { display: flex; justify-content: space-between; background: var(--boxbg);
@@ -57,10 +59,15 @@
 </nav>
 
 <main>
-  <h1 id="mk-title">Title</h1>
-  <h2 class="alttitle" id="mk-alt">Subtitle</h2>
+  <!-- 真站骨架（实测 vndb.org/v9093 / v12447）：作品名 h1 + 原名 h2.alttitle **和详情表在同一个
+       <main> > <article> 盒子里** —— 盒底 = --boxbg、边框 1px、padding 5px；
+       h1 用官方给的 margin:-5px 顶到盒顶沿（所以文字看着是贴着边缘的），
+       .alttitle 再用 margin:-17px 0 15px 15px 贴到 h1 下面 —— 这些边距都由官方 CSS 提供，本页不重复写。
+       ⚠️ 必须用**光板 <article>**（不能加自定义 class），否则盒子的底色/边框会被盖掉、跟真站不一样。 -->
+  <article>
+    <h1 id="mk-title">Title</h1>
+    <h2 class="alttitle" id="mk-alt">Subtitle</h2>
 
-  <div class="mk-card">
     <table>
       <tr class="odd"><td>Title</td><td id="mk-title2">Title</td></tr>
       <tr><td>Links</td><td><a href="#">Official website</a> &middot; <a href="#">Wikipedia</a></td></tr>
@@ -71,7 +78,7 @@
       </td></tr>
       <tr><td>Weak</td><td class="mk-gray">grayed-out / &#24369;&#21270;&#25991;&#23383;</td></tr>
     </table>
-  </div>
+  </article>
 
   <p>&#26412;&#25991;&#12486;&#12461;&#12473;&#12488;&#12398;&#12469;&#12531;&#12503;&#12523;&#12289;<a href="#">&#12522;&#12531;&#12463;</a>&#12399;
      <span class="mk-gray">&#24369;&#21270;</span> &#12420 <span class="mk-so">&#24375;&#35519;</span> &#12392;&#20006;&#12409;&#12390;&#12418;&#35501;&#12417;&#12414;&#12377;&#12290;</p>
@@ -86,17 +93,26 @@
 <script>
   const q = new URLSearchParams(location.search);
   const name = q.get("theme") || "misakura_rin";
+  /* title = 主标题（h1 `#mk-title`），alt = 副标题（h2.alttitle `#mk-alt`）。
+     速览页现在传的是「**作品名**：日文原名做主、罗马字做副」（原来是反的），
+     方向由调用方决定 —— 本页只把两个参数按位填进 h1 / h2。 */
   const title = q.get("title") || "Sample";
   const alt = q.get("alt") || "";
   document.getElementById("mk-title").textContent = title;
   document.getElementById("mk-title2").textContent = title;
-  document.getElementById("mk-alt").textContent = alt;
+  /* 没有副标题（没传 alt）就把整个 h2 隐藏 —— 别留一条空行，.alttitle 自带上下边距 */
+  const altEl = document.getElementById("mk-alt");
+  altEl.textContent = alt;
+  if (!alt) altEl.style.display = "none";
   document.title = name;
-  /* 主题 css 同上：.agent/tools/ → 仓库根目录，往上两级 */
+  /* 主题 css 同上：.agent/tools/ → 仓库根目录，往上两级。
+     ⚠️ 必须绕过 HTTP 缓存，否则改了 css 在平铺里看不到变化：
+        no-store 关掉缓存，?t= 再让 URL 每次不同（t 由 overview 传入，两边取到同一版）。 */
   (async () => {
+    const stamp = q.get("t") || Date.now();
     for (const base of ["../../", "/vndb-skins/"]) {
       try {
-        const r = await fetch(base + "custom/" + name + ".css");
+        const r = await fetch(base + "custom/" + name + ".css?t=" + stamp, { cache: "no-store" });
         if (!r.ok) continue;
         document.getElementById("theme").textContent = await r.text();
         document.body.dataset.ready = "1";
