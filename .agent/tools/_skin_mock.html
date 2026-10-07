@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>skin mock</title>
+<!-- 官方皮肤，原样加载。**本文件在 .agent/tools/，仓库根目录在上两级**。 -->
+<link rel="stylesheet" href="../../official/angel.css">
+<!-- 被测主题：由脚本按 ?theme= 注入 -->
+<style id="theme"></style>
+<style>
+  /* ---- 这一块只是"补齐骨架"和"暴露语义色"，不覆盖任何主题变量 ---- */
+  body { min-height: 800px; }
+
+  /* 官方那颗 433x140 的装饰图和本批背景图不是一套（主题文件里也会各隐藏一次） */
+  #bgright { display: none; }
+  /* 侧栏用官方那套（body>nav），但 mock 里不需要汉堡按钮 */
+  body > header nav { display: none; }
+
+  /* 把各语义色摆出来，方便一眼看清每一档是什么颜色 */
+  .mk-gray { color: var(--grayedout); }
+  .mk-so   { color: var(--standout); }
+  .mk-ok   { color: var(--statok); }
+  .mk-nok  { color: var(--statnok); }
+  .mk-ft   { color: var(--footer); }
+
+  .mk-card { background: var(--boxbg); border: 1px solid var(--border); padding: 6px 9px; margin: 8px 0; }
+  .mk-sec  { background: var(--secbg); border: 1px solid var(--secborder); padding: 4px 8px; margin: 8px 0; }
+  .mk-tabc { display: inline-block; background: var(--tabbg); border: 1px solid var(--border); border-bottom: none; padding: 2px 10px; }
+  .mk-h2   { display: flex; justify-content: space-between; background: var(--boxbg);
+             border-bottom: 1px solid var(--border); padding: 1px 4px; font-weight: bold; }
+  .mk-navrow { padding: 2px 8px; }
+  .mk-navrow:hover { background: var(--blendbg); }
+  .mk-mini { font-size: 12px; color: var(--grayedout); }
+</style>
+</head>
+<body>
+<header>
+  <h1><a href="#">the visual novel database</a></h1>
+  <nav><label for="mainmenu">≡</label></nav>
+</header>
+<input type="checkbox" id="mainmenu" checked hidden>
+
+<nav>
+  <article>
+    <div class="mk-h2"><span>Database</span><span class="mk-mini">▼</span></div>
+    <div class="mk-navrow">Visual novels</div>
+    <div class="mk-navrow">Releases</div>
+    <div class="mk-navrow">Producers</div>
+    <div class="mk-navrow">Staff</div>
+  </article>
+  <article>
+    <div class="mk-h2"><span>User</span><span class="mk-mini">▼</span></div>
+    <div class="mk-navrow">My list</div>
+    <div class="mk-navrow">Wishlist</div>
+    <div class="mk-navrow">Votes</div>
+  </article>
+</nav>
+
+<main>
+  <h1 id="mk-title">Title</h1>
+  <h2 class="alttitle" id="mk-alt">Subtitle</h2>
+
+  <div class="mk-card">
+    <table>
+      <tr class="odd"><td>Title</td><td id="mk-title2">Title</td></tr>
+      <tr><td>Links</td><td><a href="#">Official website</a> &middot; <a href="#">Wikipedia</a></td></tr>
+      <tr class="odd"><td>Status</td><td>
+        <span class="mk-ok">&#10003; Finished</span> &middot;
+        <span class="mk-nok">&#10007; Dropped</span> &middot;
+        <span class="mk-so">&#9733; Standout</span>
+      </td></tr>
+      <tr><td>Weak</td><td class="mk-gray">grayed-out / &#24369;&#21270;&#25991;&#23383;</td></tr>
+    </table>
+  </div>
+
+  <p>&#26412;&#25991;&#12486;&#12461;&#12473;&#12488;&#12398;&#12469;&#12531;&#12503;&#12523;&#12289;<a href="#">&#12522;&#12531;&#12463;</a>&#12399;
+     <span class="mk-gray">&#24369;&#21270;</span> &#12420 <span class="mk-so">&#24375;&#35519;</span> &#12392;&#20006;&#12409;&#12390;&#12418;&#35501;&#12417;&#12414;&#12377;&#12290;</p>
+
+  <div class="mk-sec">&#20837;&#21147;&#26694; / &#34920;&#22836;&#19968;&#26723; &#65288;--secbg / --secborder&#65289;</div>
+  <p><span class="mk-tabc">&#26410;&#36984;&#20013;&#26631;&#31614;</span></p>
+  <p class="mk-gray">the quick brown fox jumps over the lazy dog &mdash; 0123456789</p>
+
+  <footer>footer &middot; <a href="#">a link</a> &middot; <span class="mk-ft">&#39029;&#33050;</span></footer>
+</main>
+
+<script>
+  const q = new URLSearchParams(location.search);
+  const name = q.get("theme") || "misakura_rin";
+  const title = q.get("title") || "Sample";
+  const alt = q.get("alt") || "";
+  document.getElementById("mk-title").textContent = title;
+  document.getElementById("mk-title2").textContent = title;
+  document.getElementById("mk-alt").textContent = alt;
+  document.title = name;
+  /* 主题 css 同上：.agent/tools/ → 仓库根目录，往上两级 */
+  (async () => {
+    for (const base of ["../../", "/vndb-skins/"]) {
+      try {
+        const r = await fetch(base + "custom/" + name + ".css");
+        if (!r.ok) continue;
+        document.getElementById("theme").textContent = await r.text();
+        document.body.dataset.ready = "1";
+        return;
+      } catch (e) { /* 下一个 */ }
+    }
+    document.title = name + " — css 载入失败";
+    document.body.dataset.ready = "error";
+  })();
+</script>
+</body>
+</html>

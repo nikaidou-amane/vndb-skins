@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>新增 8 套皮肤速览</title>
+<style>
+  :root { --line: #2a2f38; --dim: #8b949e; }
+  html, body { margin: 0; background: #0f1216; color: #e6edf3;
+               font: 13px/1.6 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; }
+  a { color: #6fc3ff; }
+  h1 { font-size: 20px; margin: 22px 24px 4px; font-weight: 600; }
+  h1 small { color: var(--dim); font-weight: 400; font-size: 13px; }
+  h2 { font-size: 15px; margin: 26px 24px 10px; font-weight: 600;
+       border-left: 3px solid #6fc3ff; padding-left: 8px; }
+  .note { margin: 0 24px 8px; color: var(--dim); }
+  .note code { background: #1b2027; padding: 1px 4px; border-radius: 3px; }
+
+  .bar { margin: 14px 24px 0; display: flex; gap: 6px; }
+  .bar button { background: #1b2027; color: #c9d1d9; border: 1px solid var(--line);
+                padding: 5px 12px; border-radius: 5px; cursor: pointer; font: inherit; font-size: 12px; }
+  .bar button.on { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+  body.v-matrix #tiles-wrap, body.v-tiles #matrix-wrap { display: none; }
+
+  /* ---------- 色板矩阵 ---------- */
+  #matrix-wrap { margin: 12px 24px 0; overflow-x: auto; }
+  table.mx { border-collapse: collapse; font-size: 11px; }
+  table.mx th, table.mx td { padding: 3px 5px; text-align: left; white-space: nowrap;
+                             border-bottom: 1px solid var(--line); }
+  table.mx th { color: var(--dim); font-weight: 500; position: sticky; top: 0;
+                background: #0f1216; z-index: 2; }
+  table.mx td.name { font-family: Consolas, monospace; font-size: 11.5px; color: #e6edf3;
+                     position: sticky; left: 0; background: #0f1216; z-index: 1; }
+  table.mx td.name span { color: var(--dim); font-family: inherit; }
+  .sw { height: 20px; width: 54px; border-radius: 3px; border: 1px solid rgba(255,255,255,.12); }
+  .hx { color: var(--dim); font-family: Consolas, monospace; font-size: 9.5px; margin-top: 1px; }
+  td.num { font-family: Consolas, monospace; }
+  .pass { color: #5ed8a9; } .warn { color: #e6b06a; }
+
+  /* ---------- 整页预览 ---------- */
+  #tiles-wrap { margin: 12px 24px 60px; display: grid;
+                grid-template-columns: repeat(auto-fill, 424px); gap: 18px; justify-content: start; }
+  .tile { width: 424px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #14181e; }
+  .tile h3 { margin: 0; padding: 8px 12px; font-size: 13px; font-weight: 600;
+             border-bottom: 1px solid var(--line); display: flex; justify-content: space-between;
+             align-items: baseline; gap: 8px; }
+  .tile h3 .t-name { font-family: Consolas, monospace; }
+  .tile h3 .t-sub { color: var(--dim); font-size: 11px; font-weight: 400; text-align: right; }
+  /* 视口 1280×660，scale 0.33 → 422.4×217.8 */
+  .frame { position: relative; width: 422px; height: 218px; background: #000; }  .frame iframe { position: absolute; top: 0; left: 0; width: 1280px; height: 660px;
+                  border: 0; transform: scale(0.33); transform-origin: 0 0; }
+  .tile .meta { padding: 7px 12px 9px; color: var(--dim); font-size: 11px;
+                font-family: Consolas, monospace; line-height: 1.75; }
+  .tile .meta b { color: #c9d1d9; font-weight: 500; }
+  .tile .meta a { float: right; text-decoration: none; }
+</style>
+</head>
+<body>
+<h1>新增 8 套皮肤速览 <small>2026-10 / 与官方 <code>Angelic Serenade</code> 变量体系一致</small></h1>
+<p class="note">每格是把这个主题的<b>真实 CSS</b> 注入官方 <code>angel.css</code> 后缩放的整页预览（原视口 <code>1280×660</code>，缩到 33%）。
+   下面的色板与硬指标是页面加载时<b>现算</b>的：直接读各主题文件里 <code>:root</code> 的变量，再按 OKLCh / CIEDE2000 计算 ——
+   也就是说，改了 css 刷新这里就跟着变，不存在两份数据对不上的问题。</p>
+<p class="note">硬指标阈值：<code>ΔE(link, 正文) ≥ 22</code>、<code>ΔE(link, 弱化) ≥ 18</code>、<code>对比(link, 页底) ≥ 8</code>；达标显示绿、不达标显示黄。</p>
+
+<div class="bar">
+  <button data-view="all" class="on">全部</button>
+  <button data-view="matrix">只看色板</button>
+  <button data-view="tiles">只看整页</button>
+</div>
+
+<h2>色板矩阵与硬指标</h2>
+<div id="matrix-wrap"></div>
+
+<h2>整页预览</h2>
+<div id="tiles-wrap"></div>
+
+<script>
+/* ===================== 色彩工具（与 _pal.html 同一套实现） ===================== */
+const cl = (x, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, x));
+const s2l = c => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+const l2s = c => (c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055);
+function hex2rgb(h) { h = h.replace("#", ""); if (h.length === 3) h = h.split("").map(c => c + c).join("");
+  return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); }
+const rgb2hex = a => "#" + a.map(v => Math.round(cl(v, 0, 255)).toString(16).padStart(2, "0")).join("");
+function lin2oklab(r, g, b) {
+  const l = Math.cbrt(0.4122214708*r + 0.5363325363*g + 0.0514459929*b);
+  const m = Math.cbrt(0.2119034982*r + 0.6806995451*g + 0.1073969566*b);
+  const s = Math.cbrt(0.0883024619*r + 0.2817188376*g + 0.6299787005*b);
+  return [0.2104542553*l + 0.7936177850*m - 0.0040720468*s,
+          1.9779984951*l - 2.4285922050*m + 0.4505937099*s,
+          0.0259040371*l + 0.7827717662*m - 0.8086757660*s];
+}
+function oklab2lin(L, A, B) {
+  const l = (L + 0.3963377774*A + 0.2158037573*B) ** 3;
+  const m = (L - 0.1055613458*A - 0.0638541728*B) ** 3;
+  const s = (L - 0.0894841775*A - 1.2914855480*B) ** 3;
+  return [ 4.0767416621*l - 3.3077115913*m + 0.2309699292*s,
+          -1.2684380046*l + 2.6097574011*m - 0.3413193965*s,
+          -0.0041960863*l - 0.7034186147*m + 1.7076147010*s];
+}
+function hex2oklch(h) { const [r, g, b] = hex2rgb(h).map(v => s2l(v/255)); const [L, A, B] = lin2oklab(r, g, b);
+  const C = Math.hypot(A, B); let H = Math.atan2(B, A) * 180 / Math.PI; if (H < 0) H += 360; return [L, C, H]; }
+function oklch2hex(L, C, H, atol = 1e-5) {
+  const conv = c => oklab2lin(L, c*Math.cos(H*Math.PI/180), c*Math.sin(H*Math.PI/180));
+  let lo = 0, hi = C, lin = conv(C); const inG = v => v.every(x => x >= -atol && x <= 1 + atol);
+  if (!inG(lin)) { for (let i = 0; i < 40; i++) { const mid = (lo + hi)/2; if (inG(conv(mid))) lo = mid; else hi = mid; } lin = conv(lo); }
+  return rgb2hex(lin.map(v => l2s(cl(v)) * 255));
+}
+function rgb2lab(h) {
+  const [r, g, b] = hex2rgb(h).map(v => s2l(v/255));
+  const X = 0.4123908*r + 0.3575843*g + 0.1804808*b;
+  const Y = 0.2126390*r + 0.7151687*g + 0.0721923*b;
+  const Z = 0.0193308*r + 0.1191948*g + 0.9505322*b;
+  const f = t => (t > 216/24389 ? Math.cbrt(t) : (841/108)*t + 4/29);
+  const fx = f(X/0.9504559), fy = f(Y), fz = f(Z/1.0890578);
+  return [116*fy - 16, 500*(fx - fy), 200*(fy - fz)];
+}
+function de00(h1, h2) {
+  const [L1, a1, b1] = rgb2lab(h1), [L2, a2, b2] = rgb2lab(h2);
+  const rad = d => d*Math.PI/180, deg = r => r*180/Math.PI;
+  const C1 = Math.hypot(a1, b1), C2 = Math.hypot(a2, b2), Cb = (C1 + C2)/2;
+  const G = 0.5*(1 - Math.sqrt(Cb**7/(Cb**7 + 25**7)));
+  const a1p = (1 + G)*a1, a2p = (1 + G)*a2;
+  const C1p = Math.hypot(a1p, b1), C2p = Math.hypot(a2p, b2);
+  let h1p = deg(Math.atan2(b1, a1p)); if (h1p < 0) h1p += 360;
+  let h2p = deg(Math.atan2(b2, a2p)); if (h2p < 0) h2p += 360;
+  const dLp = L2 - L1, dCp = C2p - C1p;
+  let dhp = 0;
+  if (C1p*C2p !== 0) { dhp = h2p - h1p; if (dhp > 180) dhp -= 360; else if (dhp < -180) dhp += 360; }
+  const dHp = 2*Math.sqrt(C1p*C2p)*Math.sin(rad(dhp)/2);
+  const Lb = (L1 + L2)/2, Cbp = (C1p + C2p)/2;
+  let hbp;
+  if (C1p*C2p === 0) hbp = h1p + h2p;
+  else { hbp = (h1p + h2p)/2; if (Math.abs(h1p - h2p) > 180) hbp += (h1p + h2p < 360 ? 180 : -180); }
+  const T = 1 - 0.17*Math.cos(rad(hbp - 30)) + 0.24*Math.cos(rad(2*hbp)) + 0.32*Math.cos(rad(3*hbp + 6)) - 0.20*Math.cos(rad(4*hbp - 63));
+  const dTh = 30*Math.exp(-(((hbp - 275)/25) ** 2));
+  const Rc = 2*Math.sqrt(Cbp**7/(Cbp**7 + 25**7));
+  const Sl = 1 + (0.015*(Lb - 50)**2)/Math.sqrt(20 + (Lb - 50)**2);
+  const Sc = 1 + 0.045*Cbp, Sh = 1 + 0.015*Cbp*T;
+  const Rt = -Math.sin(rad(2*dTh))*Rc;
+  return Math.sqrt((dLp/Sl)**2 + (dCp/Sc)**2 + (dHp/Sh)**2 + Rt*(dCp/Sc)*(dHp/Sh));
+}
+const relL = h => { const [r, g, b] = hex2rgb(h).map(v => s2l(v/255)); return 0.2126*r + 0.7152*g + 0.0722*b; };
+const cr = (a, b) => { const x = relL(a), y = relL(b); return +((Math.max(x, y) + 0.05)/(Math.min(x, y) + 0.05)).toFixed(2); };
+const over = (fg, alpha, bg) => { const f = hex2rgb(fg), b = hex2rgb(bg);
+  return rgb2hex([0, 1, 2].map(i => alpha*f[i] + (1 - alpha)*b[i])); };
+const hd = (a, b) => { let d = Math.abs(a - b) % 360; return +(d > 180 ? 360 - d : d).toFixed(1); };
+
+/* ===================== 主题清单 ===================== */
+const THEMES = [
+  ["misakura_rin",    "Sakura no Uta -Sakura no Mori no Ue o Mau-"],
+  ["araya_touka",     "Tsuki no Kanata de Aimashou"],
+  ["yonagi",          "Hakuchuumu no Aojashin"],
+  ["naitou_maia",     "Hapymaher"],
+  ["yugyouji_yoruko", "Kami no Ue no Mahoutsukai"],
+  ["mochizuki_amane", "Kono Oozora ni, Tsubasa o Hirogete"],
+  ["kazami_yui",      "Parfait ~Chocolat Second Brew~"],
+  ["enamori_senri",   "PriministAr"],
+];
+const CHIPS = [["bodybg","--bodybg"],["maintext","--maintext"],["grayedout","--grayedout"],["link","--link"],
+               ["standout","--standout"],["boxtitle","--boxtitle"],["alttitle","--alttitle"],
+               ["statok","--statok"],["statnok","--statnok"],["footer","--footer"]];
+
+/* 解析：文件头那行的「角色名（原名 / VN）」+ :root 里的变量 */
+function parse(css) {
+  const head = (css.match(/VNDB Custom CSS\s*—\s*([^\n]+)/) || [])[1] || "";
+  const m = head.match(/^(.+?)（(.+?)\s*\/\s*(.+?)）\s*主题\s*$/);
+  const label = m ? { role: m[1].trim(), orig: m[2].trim(), vn: m[3].trim() }
+                  : { role: head.replace(/主题\s*$/, "").trim(), orig: "", vn: "" };
+  const body = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const rootBlock = (body.match(/:root\s*\{([\s\S]*?)\}/) || [])[1] || "";
+  const vars = {};
+  for (const decl of rootBlock.split(";")) {
+    const i = decl.indexOf(":");
+    if (i < 0) continue;
+    const k = decl.slice(0, i).trim().replace(/^--/, ""), v = decl.slice(i + 1).trim();
+    if (k && v) vars[k] = v;
+  }
+  return { label, vars };
+}
+const nums = s => (s.match(/-?\d*\.?\d+/g) || []).map(Number);
+
+/* 主题 css 的取法：本文件在 .agent/tools/，**仓库根目录在上两级** —— 所有资源都从这条规矩出发。
+   第二个候选项是绝对路径，防"服务器根不是 d:\Projects"的情况（本机实测服务器根就是 d:\Projects）。 */
+const ROOT = "../../";
+async function fetchCss(rel) {
+  for (const base of [ROOT, "/vndb-skins/"]) {
+    try { const r = await fetch(base + rel); if (r.ok) return await r.text(); } catch (e) { /* 下一个 */ }
+  }
+  throw new Error("载入失败: " + ROOT + rel);
+}
+
+/* ===================== 计算 + 渲染 ===================== */
+(async function main() {
+  const data = [];
+  const failed = [];
+  for (const [name, vnEn] of THEMES) {
+    let css;
+    try { css = await fetchCss("custom/" + name + ".css"); }
+    catch (e) { failed.push(name); continue; }
+    const { label, vars } = parse(css);
+    const c = {};
+    for (const [key, varName] of CHIPS) c[key] = (vars[varName.replace("--", "")] || "").trim();
+    const [bL, bC, bH] = hex2oklch(c.bodybg), [lL, lC, lH] = hex2oklch(c.link);
+    const pn = nums(vars["photo-shade"] || "rgba(0,0,0,0)");
+    const pageBase = pn.length === 4 ? over(oklch2hex(0.10, 0.025, bH), pn[3], c.bodybg) : c.bodybg;
+    data.push({
+      name, vnEn, label, c, bH: +bH.toFixed(1), lH: +lH.toFixed(1), dH: hd(lH, bH),
+      dE_mt: +de00(c.link, c.maintext).toFixed(1),
+      dE_go: +de00(c.link, c.grayedout).toFixed(1),
+      cr: cr(c.link, pageBase),
+      bgW: (vars["theme-bg-w"] || "").trim(),
+      pos: (vars["theme-bg-pos"] || "").trim(),
+      fade: (vars["theme-bg-fade"] || "").trim() + " / " + (vars["theme-bg-fade-y"] || "").trim(),
+      shade: pn.length === 4 ? pn[3] : "",
+      lL: +lL.toFixed(3), lC: +lC.toFixed(3), bL: +bL.toFixed(3),
+    });
+  }
+
+  /* ---- 矩阵 ---- */
+  const mx = document.createElement("table");
+  mx.className = "mx";
+  const head = ["主题"].concat(CHIPS.map(([, v]) => v))
+                          .concat(["色相差", "ΔE 正文", "ΔE 弱化", "对比 页底", "位置", "bg-w", "渐隐", "薄纱"]);
+  mx.innerHTML = "<thead><tr>" + head.map(h => `<th>${h}</th>`).join("") + "</tr></thead><tbody></tbody>";
+  const tb = mx.querySelector("tbody");
+  for (const d of data) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td class="name">${d.name}<br><span>${d.label.role}</span></td>`
+      + CHIPS.map(([k]) => `<td><div class="sw" style="background:${d.c[k]}" title="${d.c[k]}"></div><div class="hx">${d.c[k]}</div></td>`).join("")
+      + `<td class="num">${d.dH}°</td>`
+      + `<td class="num ${d.dE_mt >= 22 ? "pass" : "warn"}">${d.dE_mt}</td>`
+      + `<td class="num ${d.dE_go >= 18 ? "pass" : "warn"}">${d.dE_go}</td>`
+      + `<td class="num ${d.cr >= 8 ? "pass" : "warn"}">${d.cr}</td>`
+      + `<td class="num">${d.pos}</td><td class="num">${d.bgW}</td><td class="num">${d.fade}</td><td class="num">${d.shade}</td>`;
+    tb.appendChild(tr);
+  }
+  document.getElementById("matrix-wrap").appendChild(mx);
+  if (failed.length) {
+    const b = document.createElement("p");
+    b.className = "note";
+    b.style.color = "#ff7b72";
+    b.textContent = "⚠️ 有 " + failed.length + " 个主题的 css 没读到（相对路径不对？）：" + failed.join(", ");
+    document.getElementById("matrix-wrap").prepend(b);
+  }
+
+  /* ---- 整页预览 ---- */
+  const wrap = document.getElementById("tiles-wrap");
+  for (const d of data) {
+    const qs = new URLSearchParams({ theme: d.name, title: d.vnEn, alt: d.label.vn });
+    const t = document.createElement("div");
+    t.className = "tile";
+    t.innerHTML = `<h3><span class="t-name">${d.name}</span>
+                     <span class="t-sub">${d.label.role}${d.label.orig ? " ・ " + d.label.orig : ""}</span></h3>
+      <div class="frame"><iframe loading="lazy" src="_skin_mock.html?${qs}" scrolling="no"></iframe></div>
+      <div class="meta">
+        <a href="_skin_mock.html?${qs}" target="_blank">单独打开 &nearr;</a>
+        <b>bg</b> ${d.c.bodybg} L${d.bL} H${d.bH}° &nbsp; <b>link</b> ${d.c.link} L${d.lL} C${d.lC} H${d.lH}°<br>
+        <b>色相差</b> ${d.dH}° &nbsp; <b>ΔE</b> 正文 ${d.dE_mt} / 弱化 ${d.dE_go} &nbsp; <b>对比</b> ${d.cr}:1<br>
+        <b>图</b> ${d.pos} ・ ${d.bgW} ・ 渐隐 ${d.fade} &nbsp; ${d.vnEn}
+      </div>`;
+    wrap.appendChild(t);
+  }
+
+  /* ---- 视图切换 ---- */
+  for (const b of document.querySelectorAll(".bar button")) {
+    b.onclick = () => {
+      document.querySelectorAll(".bar button").forEach(x => x.classList.toggle("on", x === b));
+      document.body.className = b.dataset.view === "all" ? "" : "v-" + b.dataset.view;
+    };
+  }
+  document.title = "新增 8 套皮肤速览";
+})();
+</script>
+</body>
+</html>

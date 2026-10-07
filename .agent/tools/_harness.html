@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>harness</title>
+<!-- 官方皮肤，原样加载。**本文件在 .agent/tools/，仓库根目录在上两级**。 -->
+<link rel="stylesheet" href="../../official/angel.css">
+<!-- 被测主题：由脚本注入（fetch 同一个源，避免了 link 的异步竞态） -->
+<style id="theme"></style>
+<style>
+  /* 只为了给页面一点高度，让 background-attachment:scroll 的图有地方"滚走"。
+     刻意不放 article / 卡片：这条测试量的是 body 背景层的几何与渐隐曲线，
+     卡片会把量测条带挡住。 */
+  body { min-height: 900px; }
+  #mainmenu { display: none; }
+  body > main { grid-area: 2 / 1 / 3 / 3; }
+  #bgright { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1><a href="#">the visual novel database</a></h1>
+</header>
+<div id="mainmenu"></div>
+<main>
+  <footer>footer <a href="#">a link</a></footer>
+</main>
+
+<script>
+  /* 主题 CSS 注入器：.agent/tools/ → 仓库根目录，往上两级。
+     用法（控制台 / playwright）：await __loadTheme("mochizuki_amane") */
+  window.__loadTheme = async function (name) {
+    for (const base of ["../../", "/vndb-skins/"]) {
+      const r = await fetch(base + "custom/" + name + ".css").catch(() => null);
+      if (r && r.ok) {
+        document.getElementById("theme").textContent = await r.text();
+        document.body.dataset.theme = name;
+        return name;
+      }
+    }
+    throw new Error("载入失败: ../../custom/" + name + ".css");
+  };
+</script>
+</body>
+</html>

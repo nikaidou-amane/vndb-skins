@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>probe8</title>
+<style>
+  body{margin:0;background:#141414;color:#ddd;font:11px/1.5 monospace}
+  .g{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:6px}
+  figure{margin:0}
+  img{width:100%;display:block;border:1px solid #444}
+  figcaption{color:#9cf;padding:2px 0}
+</style>
+</head>
+<body>
+<div class="g" id="g"></div>
+<script>
+const IMGS = [
+  ["misakura_rin",   "/vn-assets/sakura_no_toki/misakura_rin-58aef820054a53bce2d77d29bdd29a3faf9ddeaa.avif"],
+  ["araya_touka",    "/vn-assets/tsukikana/araya_touka-5b1798a0adbd141ed10a407c8aae4af5326b27d5.avif"],
+  ["yonagi",         "/vn-assets/hakuchuumu_no_aojashin/yonagi-f2b757e7859deecc7525f22882728be21d7d9343.avif"],
+  ["naitou_maia",    "/vn-assets/hapymaher/naitou_maia-0fe0d6a8241b4cb29f204b6d7d65bb1b3b229f68.avif"],
+  ["yugyouji_yoruko","/vn-assets/kami_no_ue_no_mahoutsukai/yugyouji_yoruko-8e96100d7ddb1a4c3fe3d2f3995523c169e798f5.avif"],
+  ["mochizuki_amane","/vn-assets/kono_oozora_ni/mochizuki_amane-d8e678330198a41c7aa390f5879620cf97954a4c.avif"],
+  ["kazami_yui",     "/vn-assets/parfait_remake/kazami_yui-d322f97b1ad2f212dc5d8add3642faed08d0ae44.avif"],
+  ["enamori_senri",  "/vn-assets/priministar/enamori_senri-9ee5d3fea6c94aea5fc33214bf5484e5ec045e56.avif"]
+];
+const g = document.getElementById("g");
+const gEls = {};
+for (const [name, url] of IMGS) {
+  const f = document.createElement("figure");
+  f.innerHTML = `<img src="${url}" alt="${name}"><figcaption>${name}</figcaption>`;
+  g.appendChild(f);
+  gEls[name] = f.querySelector("img");
+}
+const hex = a => "#" + [0,1,2].map(i => a[i].toString(16).padStart(2,"0")).join("");
+const luma = a => Math.round(0.2126*a[0] + 0.7152*a[1] + 0.0722*a[2]);
+
+function bandMean(d, W, H, side, n) {
+  let r=0,gr=0,b=0,c=0;
+  const acc = (x,y)=>{ const i=(y*W+x)*4; r+=d[i]; gr+=d[i+1]; b+=d[i+2]; c++; };
+  for (let t=0;t<n;t++){
+    if (side==="top"||side==="bottom") { const y = side==="top"? t : H-1-t; for (let x=0;x<W;x+=2) acc(x,y); }
+    else { const x = side==="left"? t : W-1-t; for (let y=0;y<H;y+=2) acc(x,y); }
+  }
+  return [r/c, gr/c, b/c];
+}
+
+window.__analyze = async () => {
+  const out = [];
+  for (const [name, url] of IMGS) {
+    const img = gEls[name];
+    if (!img.complete || !img.naturalWidth) { out.push({name, error:"not loaded"}); continue; }
+    const W = img.naturalWidth, H = img.naturalHeight;
+    const c = document.createElement("canvas"); c.width = W; c.height = H;
+    const ctx = c.getContext("2d", {willReadFrequently:true});
+    ctx.drawImage(img, 0, 0);
+    const d = ctx.getImageData(0, 0, W, H).data;
+    // 整体
+    let sr=0,sg=0,sb=0,sl=0,n=0;
+    for (let y=0;y<H;y+=3) for (let x=0;x<W;x+=3){ const i=(y*W+x)*4; sr+=d[i];sg+=d[i+1];sb+=d[i+2];sl+=luma([d[i],d[i+1],d[i+2]]);n++; }
+    const mean = [sr/n,sg/n,sb/n];
+    // 四缘
+    const edges = {};
+    for (const s of ["top","bottom","left","right"]) { const m = bandMean(d,W,H,s,5); edges[s] = {hex:hex(m.map(Math.round)), lum:luma(m)}; }
+    // 饱和色簇（30° 一桶）
+    const bins = new Map();
+    for (let y=0;y<H;y+=3) for (let x=0;x<W;x+=3) {
+      const i=(y*W+x)*4, r=d[i]/255, gg=d[i+1]/255, b=d[i+2]/255;
+      const mx=Math.max(r,gg,b), mn=Math.min(r,gg,b), v=mx, s=mx===0?0:(mx-mn)/mx;
+      if (s < 0.22 || v < 0.15) continue;
+      let h; const dd=mx-mn;
+      if (dd===0) h=0; else if (mx===r) h=60*(((gg-b)/dd)%6); else if (mx===gg) h=60*((b-r)/dd+2); else h=60*((r-gg)/dd+4);
+      if (h<0) h+=360;
+      const k = Math.floor(h/30)*30;
+      if (!bins.has(k)) bins.set(k,{n:0,r:0,g:0,b:0,s:0,v:0});
+      const o=bins.get(k); o.n++; o.r+=d[i]; o.g+=d[i+1]; o.b+=d[i+2]; o.s+=s; o.v+=v;
+    }
+    const hues = [...bins.entries()].sort((a,b)=>b[1].n-a[1].n).slice(0,5).map(([k,o])=>({
+      hue:k, pct:+(100*o.n/n).toFixed(1), hex:hex([o.r,o.g,o.b].map(v=>Math.round(v/o.n))),
+      s:+ (o.s/o.n).toFixed(2), v:+(o.v/o.n).toFixed(2)
+    }));
+    // 8x5 构图网格
+    const gx=8, gy=5, grid=[];
+    for (let j=0;j<gy;j++){ const row=[]; for (let i2=0;i2<gx;i2++){
+      let r2=0,g2=0,b2=0,cc=0;
+      for (let y=Math.floor(j*H/gy); y<Math.floor((j+1)*H/gy); y+=3)
+        for (let x=Math.floor(i2*W/gx); x<Math.floor((i2+1)*W/gx); x+=3){ const k=(y*W+x)*4; r2+=d[k];g2+=d[k+1];b2+=d[k+2];cc++; }
+      row.push(hex([r2/cc,g2/cc,b2/cc].map(Math.round)) + "/" + luma([r2/cc,g2/cc,b2/cc]));
+    } grid.push(row); }
+    out.push({name, W, H, ratio:+(W/H).toFixed(4), mean:hex(mean.map(Math.round)), meanLum:Math.round(sl/n), edges, hues, grid});
+  }
+  return out;
+};
+window.__ready = () => IMGS.every(([n]) => gEls[n].complete && gEls[n].naturalWidth > 0);
+</script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head><meta charset="utf-8"><title>palette</title></head>
+<body>
+<pre id="out">working…</pre>
+<script>
+/* ---------- 色彩工具 ---------- */
+const cl = (x, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, x));
+const s2l = c => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+const l2s = c => (c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055);
+function hex2rgb(h) { h = h.replace("#", ""); if (h.length === 3) h = h.split("").map(c => c + c).join(""); return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); }
+const rgb2hex = a => "#" + a.map(v => Math.round(cl(v, 0, 255)).toString(16).padStart(2, "0")).join("");
+function lin2oklab(r, g, b) {
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  return [0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+          1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+          0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s];
+}
+function oklab2lin(L, A, B) {
+  const l = (L + 0.3963377774 * A + 0.2158037573 * B) ** 3;
+  const m = (L - 0.1055613458 * A - 0.0638541728 * B) ** 3;
+  const s = (L - 0.0894841775 * A - 1.2914855480 * B) ** 3;
+  return [ 4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+          -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+          -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s];
+}
+function hex2oklch(h) { const [r, g, b] = hex2rgb(h).map(v => s2l(v / 255)); const [L, A, B] = lin2oklab(...[r, g, b]); const C = Math.hypot(A, B); let H = Math.atan2(B, A) * 180 / Math.PI; if (H < 0) H += 360; return [L, C, H]; }
+function oklch2hex(L, C, H, atol = 1e-5) {   // 超色域时二分降 C
+  const conv = (c) => { const a = c * Math.cos(H * Math.PI / 180), b = c * Math.sin(H * Math.PI / 180); return oklab2lin(L, a, b); };
+  let lo = 0, hi = C, lin = conv(C);
+  const inG = v => v.every(x => x >= -atol && x <= 1 + atol);
+  if (!inG(lin)) { for (let i = 0; i < 40; i++) { const mid = (lo + hi) / 2; if (inG(conv(mid))) lo = mid; else hi = mid; } lin = conv(lo); }
+  return rgb2hex(lin.map(v => l2s(cl(v)) * 255));
+}
+/* XYZ D65 / Lab */
+function rgb2lab(h) {
+  const [r, g, b] = hex2rgb(h).map(v => s2l(v / 255));
+  const X = 0.4123908 * r + 0.3575843 * g + 0.1804808 * b;
+  const Y = 0.2126390 * r + 0.7151687 * g + 0.0721923 * b;
+  const Z = 0.0193308 * r + 0.1191948 * g + 0.9505322 * b;
+  const f = t => (t > 216 / 24389 ? Math.cbrt(t) : (841 / 108) * t + 4 / 29);
+  const fx = f(X / 0.9504559), fy = f(Y), fz = f(Z / 1.0890578);
+  return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
+}
+function de00(h1, h2) {
+  const [L1, a1, b1] = rgb2lab(h1), [L2, a2, b2] = rgb2lab(h2);
+  const rad = d => d * Math.PI / 180, deg = r => r * 180 / Math.PI;
+  const C1 = Math.hypot(a1, b1), C2 = Math.hypot(a2, b2), Cb = (C1 + C2) / 2;
+  const G = 0.5 * (1 - Math.sqrt(Cb ** 7 / (Cb ** 7 + 25 ** 7)));
+  const a1p = (1 + G) * a1, a2p = (1 + G) * a2;
+  const C1p = Math.hypot(a1p, b1), C2p = Math.hypot(a2p, b2);
+  let h1p = deg(Math.atan2(b1, a1p)); if (h1p < 0) h1p += 360;
+  let h2p = deg(Math.atan2(b2, a2p)); if (h2p < 0) h2p += 360;
+  const dLp = L2 - L1, dCp = C2p - C1p;
+  let dhp = 0;
+  if (C1p * C2p !== 0) { dhp = h2p - h1p; if (dhp > 180) dhp -= 360; else if (dhp < -180) dhp += 360; }
+  const dHp = 2 * Math.sqrt(C1p * C2p) * Math.sin(rad(dhp) / 2);
+  const Lb = (L1 + L2) / 2, Cbp = (C1p + C2p) / 2;
+  let hbp;
+  if (C1p * C2p === 0) hbp = h1p + h2p;
+  else { hbp = (h1p + h2p) / 2; if (Math.abs(h1p - h2p) > 180) hbp += (h1p + h2p < 360 ? 180 : -180); }
+  const T = 1 - 0.17 * Math.cos(rad(hbp - 30)) + 0.24 * Math.cos(rad(2 * hbp)) + 0.32 * Math.cos(rad(3 * hbp + 6)) - 0.20 * Math.cos(rad(4 * hbp - 63));
+  const dTh = 30 * Math.exp(-(((hbp - 275) / 25) ** 2));
+  const Rc = 2 * Math.sqrt(Cbp ** 7 / (Cbp ** 7 + 25 ** 7));
+  const Sl = 1 + (0.015 * (Lb - 50) ** 2) / Math.sqrt(20 + (Lb - 50) ** 2);
+  const Sc = 1 + 0.045 * Cbp, Sh = 1 + 0.015 * Cbp * T;
+  const Rt = -Math.sin(rad(2 * dTh)) * Rc;
+  return Math.sqrt((dLp / Sl) ** 2 + (dCp / Sc) ** 2 + (dHp / Sh) ** 2 + Rt * (dCp / Sc) * (dHp / Sh));
+}
+const relL = h => { const [r, g, b] = hex2rgb(h).map(v => s2l(v / 255)); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+const cr = (a, b) => { const x = relL(a), y = relL(b); return +((Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)).toFixed(2); };
+function over(fgHex, alpha, bgHex) { const f = hex2rgb(fgHex), b = hex2rgb(bgHex); return rgb2hex([0, 1, 2].map(i => alpha * f[i] + (1 - alpha) * b[i])); }
+const hd = (a, b) => { let d = Math.abs(a - b) % 360; return +(d > 180 ? 360 - d : d).toFixed(1); };
+
+/* ---------- 8 套待定调色板（OKLCh 规格：[L, C, H]） ---------- */
+const T = [
+{ name:"misakura_rin", pos:"left top", ratio:1.7778, w:40, fx:24, fy:20, shade:[0.22, 260],
+  boxbg:0.78, bg:[0.155,0.045,325], link:[0.810,0.125,338], bt:[0.700,0.105,303], at:[0.900,0.045,305],
+  sd:[0.800,0.150,72], sn:[0.630,0.205,22], ok:[0.790,0.140,158], go:[0.660,0.015,325],
+  mt:[0.965,0.006,338], ft:[0.885,0.030,338] },
+{ name:"araya_touka", pos:"left top", ratio:1.5, w:42, fx:20, fy:18, shade:[0.22, 250],
+  boxbg:0.78, bg:[0.160,0.060,262], link:[0.780,0.110,250], bt:[0.755,0.090,288], at:[0.930,0.030,288],
+  sd:[0.780,0.140,75], sn:[0.630,0.200,25], ok:[0.800,0.130,165], go:[0.670,0.015,260],
+  mt:[0.965,0.005,250], ft:[0.880,0.025,248] },
+{ name:"yonagi", pos:"right top", ratio:0.6667, w:28, fx:16, fy:14, shade:[0.18, 20],
+  boxbg:0.78, bg:[0.155,0.030,30], link:[0.800,0.115,62], bt:[0.680,0.115,12], at:[0.890,0.050,12],
+  sd:[0.790,0.150,150], sn:[0.640,0.210,30], ok:[0.810,0.120,185], go:[0.660,0.012,40],
+  mt:[0.960,0.006,40], ft:[0.880,0.025,45] },
+{ name:"naitou_maia", pos:"right top", ratio:1.7778, w:42, fx:22, fy:18, shade:[0.22, 330],
+  boxbg:0.78, bg:[0.150,0.055,345], link:[0.805,0.130,12], bt:[0.740,0.105,300], at:[0.905,0.045,300],
+  sd:[0.780,0.160,78], sn:[0.620,0.215,25], ok:[0.800,0.135,160], go:[0.665,0.018,330],
+  mt:[0.965,0.007,350], ft:[0.885,0.028,345] },
+{ name:"yugyouji_yoruko", pos:"right top", ratio:1.7778, w:40, fx:22, fy:20, shade:[0.26, 285],
+  boxbg:0.82, bg:[0.160,0.045,288], link:[0.800,0.115,265], bt:[0.755,0.110,75], at:[0.910,0.050,75],
+  sd:[0.760,0.150,355], sn:[0.630,0.205,28], ok:[0.800,0.130,160], go:[0.670,0.015,285],
+  mt:[0.960,0.006,285], ft:[0.885,0.028,290] },
+{ name:"mochizuki_amane", pos:"right top", ratio:1.7778, w:40, fx:24, fy:22, shade:[0.28, 230],
+  boxbg:0.86, bg:[0.165,0.040,235], link:[0.800,0.110,220], bt:[0.730,0.115,55], at:[0.900,0.050,55],
+  sd:[0.740,0.160,5], sn:[0.630,0.210,30], ok:[0.800,0.130,165], go:[0.670,0.015,230],
+  mt:[0.965,0.005,230], ft:[0.885,0.025,230] },
+{ name:"kazami_yui", pos:"right top", ratio:1.6667, w:38, fx:14, fy:14, shade:[0.18, 215],
+  boxbg:0.78, bg:[0.150,0.040,225], link:[0.790,0.110,205], bt:[0.735,0.115,55], at:[0.910,0.045,60],
+  sd:[0.775,0.150,340], sn:[0.630,0.200,25], ok:[0.810,0.125,160], go:[0.670,0.015,225],
+  mt:[0.965,0.004,225], ft:[0.885,0.022,220] },
+{ name:"enamori_senri", pos:"right top", ratio:1.7778, w:42, fx:26, fy:22, shade:[0.30, 250],
+  boxbg:0.86, bg:[0.165,0.045,255], link:[0.800,0.110,235], bt:[0.740,0.110,60], at:[0.900,0.050,60],
+  sd:[0.770,0.150,355], sn:[0.630,0.205,28], ok:[0.800,0.130,165], go:[0.670,0.015,250],
+  mt:[0.970,0.004,250], ft:[0.890,0.020,250] }
+];
+
+window.__run = () => {
+  const selfcheck = { de00_black_white: +de00("#000000", "#ffffff").toFixed(2), de00_red_green: +de00("#ff0000", "#00ff00").toFixed(2) };
+  const rnd = (h, p = 2) => { const [L, C, H] = hex2oklch(h); return `oklch(${L.toFixed(3)} ${C.toFixed(3)} ${H.toFixed(1)})`; };
+  const rows = T.map(t => {
+    const H = (L, C, Hu) => oklch2hex(L, C, Hu);
+    const col = {
+      bodybg: H(...t.bg), link: H(...t.link), boxtitle: H(...t.bt), alttitle: H(...t.at),
+      standout: H(...t.sd), statnok: H(...t.sn), statok: H(...t.ok), grayedout: H(...t.go),
+      maintext: H(...t.mt), footer: H(...t.ft)
+    };
+    // 页面底 = 薄纱 叠在 bodybg 上；卡片底 = boxbg 叠在页面底上
+    const shadeColor = oklch2hex(0.10, 0.025, t.shade[1]);
+    const pageReal = over(shadeColor, t.shade[0], col.bodybg);
+    const card = over(col.bodybg, t.boxbg, pageReal);
+    const keys = [["maintext", col.maintext], ["link", col.link], ["standout", col.standout], ["boxtitle", col.boxtitle],
+                  ["alttitle", col.alttitle], ["grayedout", col.grayedout], ["statok", col.statok], ["statnok", col.statnok], ["footer", col.footer]];
+    const crd = keys.map(([n, c]) => [n, cr(c, card), cr(c, pageReal)]);
+    const [lL, lC, lH] = hex2oklch(col.link), [bL, bC, bH] = hex2oklch(col.bodybg);
+    const [sL, sC, sH] = hex2oklch(col.standout), [tL, tC, tH] = hex2oklch(col.boxtitle);
+    return {
+      name: t.name, 位置: t.pos, 宽: t.w + "vw", 渐隐: t.fx + "% / " + t.fy + "%", 薄纱: t.shade[0], 卡片不透明度: t.boxbg,
+      hex: col,
+      link_oklch: rnd(col.link), bg_oklch: rnd(col.bodybg),
+      底色L: +bL.toFixed(3), 链接L: +lL.toFixed(3), 链接C: +lC.toFixed(3),
+      色相差: hd(lH, bH),
+      ΔE_link_maintext: +de00(col.link, col.maintext).toFixed(1),
+      ΔE_link_grayedout: +de00(col.link, col.grayedout).toFixed(1),
+      ΔE_link_standout: +de00(col.link, col.standout).toFixed(1),
+      ΔE_link_boxtitle: +de00(col.link, col.boxtitle).toFixed(1),
+      ΔE_boxtitle_standout: +de00(col.boxtitle, col.standout).toFixed(1),
+      ΔE_boxtitle_alttitle: +de00(col.boxtitle, col.alttitle).toFixed(1),
+      ΔE_link_bodybg: +de00(col.link, col.bodybg).toFixed(1),
+      对比_链接_页面底: cr(col.link, pageReal),
+      对比_链接_卡片底: cr(col.link, card),
+      卡片底: card, 页面底: pageReal,
+      卡片对比: Object.fromEntries(crd.map(([n, a, b]) => [n, a])),
+      最低卡片对比: crd.slice().sort((x, y) => x[1] - y[1])[0].join(" "),
+      standout_oklch: rnd(col.standout), boxtitle_oklch: rnd(col.boxtitle)
+    };
+  });
+  return { selfcheck, rows };
+};
+window.__aux = () => T.map(t => {
+  const [bl, bc, bh] = t.bg;
+  const [r, g, b] = hex2rgb(oklch2hex(bl + 0.035, bc, bh));
+  const [r2, g2, b2] = hex2rgb(oklch2hex(bl + 0.055, bc, bh));
+  const [r3, g3, b3] = hex2rgb(oklch2hex(bl + 0.075, bc * 1.1, bh));
+  const [sr, sg, sb] = hex2rgb(oklch2hex(0.10, 0.025, bh));
+  const [br, bg2, bb] = hex2rgb(oklch2hex(bl, bc, bh));
+  return {
+    name: t.name, bodybg_rgb: `${br}, ${bg2}, ${bb}`,
+    boxbg: `rgba(${r}, ${g}, ${b}, ${t.boxbg})`,
+    tabbg: `#${[r2, g2, b2].map(v => v.toString(16).padStart(2, "0")).join("")}c5`,
+    secbg: `#${[r3, g3, b3].map(v => v.toString(16).padStart(2, "0")).join("")}cc`,
+    secborder: oklch2hex(0.46, 0.05, bh), border: oklch2hex(0.28, 0.05, bh),
+    blendbg: `#${[r2, g2, b2].map(v => v.toString(16).padStart(2, "0")).join("")}`,
+    bodybg0: `rgba(${br}, ${bg2}, ${bb}, 0)`,
+    shade: `rgba(${sr}, ${sg}, ${sb}, ${t.shade[0]})`
+  };
+});
+document.getElementById("out").textContent = "ready";
+</script>
+</body>
+</html>
