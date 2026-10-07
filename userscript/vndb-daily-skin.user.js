@@ -2,7 +2,7 @@
 // @name         VNDB Daily Skin
 // @name:zh-CN   VNDB 每日皮肤
 // @namespace    https://github.com/nikaidou-amane/vndb-skins
-// @version      2.2.2
+// @version      2.4.0
 // @description  按本地日期在 vndb-skins/custom/ 的多套主题之间轮换；document-start 同步注入，不再先闪默认皮肤
 // @author       nikaidou-amane
 // @match        https://vndb.org/*
@@ -24,6 +24,10 @@
    → 每 10 天里每套主题正好出现一次，但块与块之间的先后顺序都不一样；
    并且保证【相邻两天不会是同一套】。
 
+   轮换间隔：可以按「间隔 + 时间点」换皮肤，不限于"每天一套"（见配置里的 ROTATION）。
+   例：间隔 8h + 时间点 12:00 → 每天 04:00 / 12:00 / 20:00 各换一次
+   （24 小时制，以系统本地时间为准）。默认 = 间隔 24h + 时间点 00:00（即以前"每天 0 点换"）。
+
    手动指定（按优先级，URL 参数 > 控制台持久设置）：
      · URL 参数（只影响当次加载）
          https://vndb.org/?vskin=arise_kaguya     指定这一套
@@ -32,7 +36,9 @@
      · 控制台（持久，存在 localStorage）
          vndbSkin.list()                列出可选主题
          vndbSkin.apply('arise_kaguya') 固定用这一套
-         vndbSkin.auto()                回到按天轮换
+         vndbSkin.auto()                回到自动轮换（按 ROTATION 的设置）
+         vndbSkin.now()                 现在这套叫什么
+         vndbSkin.rotation()            看轮换设置 + 当前/下一个时间点
          vndbSkin.off()                 停用（清掉注入的样式）
 
    ⚠️ 四条实测约束，改这个脚本前先看
@@ -61,6 +67,11 @@
         所以这里用 GM_xmlhttpRequest（走扩展进程，不受页面 CSP / CORS 限制）。
         注入 <style> 本身没问题，因为 style-src 里有 'unsafe-inline'。
      3. 主题里的背景图是外链图片 → CSP 的 img-src * 放行，没问题。
+     4. 【轮换间隔怎么算】以「固定日期 + 配置的时间点」为锚，每 intervalMs 一个“槽位”，
+        当前槽位号决定用哪套。
+        ⚠️ 间隔**建议取能整除 24 的值**（1/2/3/4/6/8/12/24），否则时间点会一天天在时钟上漂移。
+        ⚠️ 改间隔/时间点会重排之后**所有**槽位的安排（槽位号变了 = 抽签序列变了），这是必然的，不是 bug。
+        ⚠️ 页面一直开着时，到下一个时间点会自动换下一套（定时器最长排 24h）。
 
    ⚠️ 维护
      · 【加减主题】只改配置里的 THEMES 数组（name = custom/ 下的文件名去掉 .css），
@@ -68,8 +79,10 @@
        ⚠️ 新增/删除主题会让"哪天用哪套"整体重排（块长 = 主题数量，会跟着变），这是必然的，不是 bug。
      · 【主题 CSS】CDN 里钉的是 commit SHA：jsDelivr 对 @<sha> 回 max-age=31536000 immutable
        （浏览器一年只下一次，性能最好），代价是改了主题样式要手动把下面的 SHA 换成新 commit。
-       ⚠️ 别给主题改成 @main：分支引用是 7 天缓存，改了要等一周；本脚本 v2 又会把 CSS 缓存在
-          本地，会把这个延迟再“锁”住一天。
+       ⚠️ 别给主题改成 @main：分支引用是 7 天缓存，改了要等一周；本脚本又会把 CSS 缓存在
+          本地，会把这个延迟再"锁"住一段时间。
+     · 【改轮换频率】改配置里的 ROTATION（间隔小时数 + 时间点），然后用 vndbSkin.rotation() 核对。
+       ⚠️ 改完会重排之后所有槽位的安排（槽位号变了 = 抽签序列变了），这是必然的，不是 bug。
      · 【本脚本自己怎么更新】@updateURL/@downloadURL 故意【不】走 jsDelivr：
        jsDelivr 的 @main 是 7 天缓存、@<sha> 是 1 年 immutable —— 改一次脚本要等一周以上才推得动，
        而“改主题 CSS 就得改脚本里的 SHA”会和它叠在一起，把整个迭代卡住。
@@ -122,24 +135,42 @@
   const TAG      = '[vndb-daily-skin]';
 
   /* ---------------------------------------------------------------------
-     工具
+     轮换间隔：多久换一套皮肤
+     · intervalHours：间隔小时数。默认 24 = “每天一套”（跟以前一样）。
+                      写小数也可以（0.5 = 半小时，最小 1 分钟），方便测试。
+                      **建议取能整除 24 的值**（1/2/3/4/6/8/12/24），否则时间点会漂移。
+     · anchorHour   ：时间点，24 小时制、按【系统本地时间】。
+                      例：intervalHours=8 + anchorHour=12 → 每天 04:00 / 12:00 / 20:00 各换一次
+                      例：intervalHours=24 + anchorHour=0  → 每天 00:00 换（默认）
+     · 判定基于“槽位号”：以固定时刻为锚、每 rotationMs 一个槽，槽位号单调递增；
+       选序（分块置乱）作用在槽位号上，所以“每 N 次各出现一次 + 相邻两次不同”依然成立。
      --------------------------------------------------------------------- */
-
-  /** 本地日期 → 天数序号。用本地 0 点切日，不用 UTC（UTC 会让北京时间早上 8 点换主题） */
-  const localDayIndex = () => {
-    const tzOffsetMs = new Date().getTimezoneOffset() * 60 * 1000;
-    return Math.floor((Date.now() - tzOffsetMs) / 86400000);
+  const ROTATION = {
+    intervalHours: 24,     // 每多少小时换一套（0.5 = 半小时）
+    anchorHour: 0,         // 间隔的起点（0-23，本地时间）
   };
 
+  /** 间隔毫秒数（最小 1 分钟，防止写成 0 之后疯狂轮换） */
+  const rotationMs = Math.max(1 / 60, ROTATION.intervalHours) * 3600 * 1000;
+  /** 槽位锚点：固定日期 + 配置的时间点（本地时间）。用固定时刻做锚，槽位号才单调 */
+  const SLOT_ANCHOR = new Date(2015, 0, 1, ROTATION.anchorHour, 0, 0, 0).getTime();
+
+  /** 当前槽位号（一个槽位 = 一次换肤时间点） */
+  const slotIndex = () => Math.floor((Date.now() - SLOT_ANCHOR) / rotationMs);
+  /** 某个槽位开始的时间戳（用来显示“这套从几点开始用”） */
+  const slotStart = (s = slotIndex()) => SLOT_ANCHOR + s * rotationMs;
+  /** 下一个换肤时间点的时间戳 */
+  const nextSlotAt = () => slotStart(slotIndex() + 1);
+
   /* ---------------------------------------------------------------------
-     选序：哪一天用哪一套
-     · 分块置乱：每 THEME_COUNT 天算一个「块」，块内是全部主题的一个**随机排列**
-       → 每 N 天里每套主题正好出现一次，但先后顺序每块都不一样（不是固定列表）。
-     · 相邻两天必然不同：块内是排列，天然不重复；跨块边界时如果“下一块第一天”
-       正好等于“上一块最后一天”，就把下一块的头两个换一下（交换后仍是合法排列）。
-     · 代价：块边界要依赖上一块的结果，所以从锚点（1970-01-01 = 第 0 块）推过来。
+     选序：每个槽位用哪一套
+     · 分块置乱：每 THEME_COUNT 个槽位算一个「块」，块内是全部主题的一个**随机排列**
+       → 每 N 次里每套主题正好出现一次，但先后顺序每块都不一样（不是固定列表）。
+     · 相邻两次必然不同：块内是排列，天然不重复；跨块边界时如果“下一块第一次”
+       正好等于“上一块最后一次”，就把下一块的头两个换一下（交换后仍是合法排列）。
+     · 代价：块边界要依赖上一块的结果，所以从锚点（第 0 块）推过来。
        块内用 mulberry32 + Fisher-Yates，N=10 时约 2000 块 × 10 次交换。
-     · 同一天永远同一套（完全可复现，不用 Math.random）。
+     · 同一个槽位永远是同一套（完全可复现，不用 Math.random）。
      --------------------------------------------------------------------- */
 
   /** 32 位整数 hash：给每块生成 PRNG 种子（纯整数运算、可复现） */
@@ -172,24 +203,26 @@
     return a;
   };
 
-  /** 第 day 天用第几套（0-based） */
-  const pickIndex = day => {
-    if (THEME_COUNT < 2 || day < 0) return 0;
-    const block = Math.floor(day / THEME_COUNT);
+  /** 第 slot 个槽位用第几套（0-based） */
+  const pickIndex = slot => {
+    if (THEME_COUNT < 2 || slot < 0) return 0;
+    const block = Math.floor(slot / THEME_COUNT);
     let prevLast = -1;
     for (let b = 0; b <= block; b++) {
       const order = blockOrder(b);
-      if (order[0] === prevLast) {                  // 跨块撞了 → 换头两个，仍保证相邻两天不同
+      if (order[0] === prevLast) {                  // 跨块撞了 → 换头两个，仍保证相邻两次不同
         [order[0], order[1]] = [order[1], order[0]];
       }
       prevLast = order[THEME_COUNT - 1];
-      if (b === block) return order[day % THEME_COUNT];
+      if (b === block) return order[slot % THEME_COUNT];
     }
     return 0;
   };
 
-  /** 第 day 天该用哪一套主题 */
-  const themeForDay = day => THEMES[pickIndex(day)];
+  /** 第 slot 个槽位该用哪一套主题 */
+  const themeForSlot = slot => THEMES[pickIndex(slot)];
+  /** 现在该用哪一套主题 */
+  const themeNow = () => themeForSlot(slotIndex());
 
   /** 没缓存、需要下载时：先把页面藏起来（避免露默认皮肤）；false = 宁可闪一下也不要空白 */
   const HIDE_WHILE_LOADING = true;
@@ -216,7 +249,7 @@
     },
   };
 
-  /* 缓存键 = 完整 URL（含 pinned SHA）→ 主题一改（换 SHA）自动失效 */
+  /* 缓存键 = 完整 URL（含 pinned SHA）→ 主题内容一改（换 SHA）自动失效，不用手动清 */
   const cacheGet = url => store.get(CACHE_PREFIX + url);
   const cacheSet = (url, css) => { if (css) store.set(CACHE_PREFIX + url, css); };
 
@@ -348,8 +381,12 @@
         ? { action: 'load', theme, why: fromUrl ? `URL 指定 (?vskin=${choice})` : `控制台指定 (${LS_KEY})` }
         : { action: 'unknown', choice };
     }
-    const day = localDayIndex();
-    return { action: 'load', theme: themeForDay(day), why: `按天轮换（第 ${day} 天，分块置乱）` };
+    const slot = slotIndex();
+    return {
+      action: 'load',
+      theme: themeForSlot(slot),
+      why: `按间隔轮换（槽位 ${slot}，本套自 ${new Date(slotStart(slot)).toLocaleString()} 起）`,
+    };
   };
 
   /** 注入完之后：检查官方皮肤名（那时 <link> 才存在）+ 后台预取明天那套 */
@@ -364,13 +401,20 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', checkSkin, { once: true });
     else checkSkin();
 
-    // 只在“按天轮换”时预取：手动固定了某一套就没必要（那套已经在缓存里了）
-    if (!pick.why.startsWith('按天轮换')) return;
-    const next = themeForDay(localDayIndex() + 1);
+    // 只在“按间隔轮换”时预取：手动固定了某一套就没必要（那套已经在缓存里了）
+    if (!pick.why.startsWith('按间隔轮换')) return;
+    const next = themeForSlot(slotIndex() + 1);
     const urls = CDN_BASES.map(base => base + next.file);
     if (urls.some(u => cacheGet(u))) return;
     const go = () => fetchText(urls).then(r => cacheSet(r.url, r.text)).catch(() => { /* ignore */ });
     (window.requestIdleCallback || (f => setTimeout(f, 1500)))(go);
+  };
+
+  /** 页面一直开着时：到下一个时间点自动换下一套（下次换肤在 24h 之外就不排了） */
+  const scheduleNextRotation = () => {
+    const ms = nextSlotAt() - Date.now();
+    if (ms <= 0 || ms > 24 * 3600 * 1000) return;
+    setTimeout(() => { start(); scheduleNextRotation(); }, ms + 1000);
   };
 
   const start = async () => {
@@ -396,11 +440,12 @@
         applyCss(cached);
         console.info(`${TAG} ${pick.theme.name}（本地缓存）← ${pick.why}`);
         afterApply(pick);
+        scheduleNextRotation();
         return;
       }
     }
 
-    // ② 没缓存（刚装 / 换 SHA / 跨天第一页）：先藏起来再下载
+    // ② 没缓存（刚装 / 换了 SHA / 某个时间点的第一页）：先藏起来再下载
     hide();
     try {
       const { url, text } = await fetchText(urls);
@@ -408,6 +453,7 @@
       applyCss(text);
       console.info(`${TAG} ${pick.theme.name}（下载）← ${pick.why}`);
       afterApply(pick);
+      scheduleNextRotation();
     } catch (e) {
       // 加载失败就什么都不做：页面落回官方皮肤（+ 你在设置里留着的自定义 CSS，如果有的话）
       console.warn(`${TAG} 主题加载失败，已保持官方皮肤：`, e.message || e);
@@ -421,14 +467,22 @@
 
   const api = {
     list:  () => THEMES.map(t => t.name),
-    today: () => themeForDay(localDayIndex()).name,
+    now:  () => themeNow().name,
+    today: () => themeNow().name,          // 老名字，保留兼容
     apply: async name => { ls.set(name); await start(); },
     auto:  async () => { ls.set(''); await start(); },
     off:   async () => { ls.set('off'); removeStyle(); reveal(); console.info(`${TAG} 已停用（vndbSkin.auto() 恢复）`); },
     reload: start,
-    /** 看每套主题有没有本地缓存 */
+    /** 每套主题的缓存状态 */
     cache: () => THEMES.map(t =>
-      `${t.name}: ` + (CDN_BASES.map(b => b + t.file).some(u => cacheGet(u)) ? '已缓存' : '未缓存')).join('\n'),
+      `${t.name}: ` + (CDN_BASES.some(b => cacheGet(b + t.file)) ? '已缓存' : '未缓存')).join('\n'),
+    /** 当前轮换设置 + 当前/下一个时间点 */
+    rotation: () => {
+      const s = slotIndex();
+      return `间隔 ${ROTATION.intervalHours}h，时间点 ${ROTATION.anchorHour}:00（本地）\n`
+        + `当前：${themeNow().name}（槽位 ${s}，自 ${new Date(slotStart(s)).toLocaleString()} 起）\n`
+        + `下一个：${themeForSlot(s + 1).name} @ ${new Date(nextSlotAt()).toLocaleString()}`;
+    },
     /** 清掉所有缓存（换 SHA / 想强制重新下载时用），之后 vndbSkin.reload() 重新拉 */
     clearCache: () => {
       for (const t of THEMES) for (const b of CDN_BASES) store.set(CACHE_PREFIX + b + t.file, '');
