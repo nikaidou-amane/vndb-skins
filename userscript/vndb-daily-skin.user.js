@@ -2,7 +2,7 @@
 // @name         VNDB Daily Skin
 // @name:zh-CN   VNDB 每日皮肤
 // @namespace    https://github.com/nikaidou-amane/vndb-skins
-// @version      2.4.0
+// @version      2.5.0
 // @description  按本地日期在 vndb-skins/custom/ 的多套主题之间轮换；document-start 同步注入，不再先闪默认皮肤
 // @author       nikaidou-amane
 // @match        https://vndb.org/*
@@ -19,14 +19,14 @@
 /* ==========================================================================
    用法
    --------------------------------------------------------------------------
-   默认：按「本地日期」轮换。同一天内所有页面/刷新都是同一套，跨过本地 0 点换下一套。
-   选序规则（**不是**固定顺序）：每 10 天算一个「块」，块内是全部主题的随机排列
-   → 每 10 天里每套主题正好出现一次，但块与块之间的先后顺序都不一样；
-   并且保证【相邻两天不会是同一套】。
+   默认：按配置的「轮换间隔 + 时间点」换皮肤（见 ROTATION），同一时间段内所有页面/刷新都是同一套。
+   选序规则（**不是**固定顺序）：每 N 次换肤算一个「块」（N = 主题数量，现为 18），
+   块内是全部主题的随机排列 → 每 N 次里每套主题正好出现一次，但块与块之间的先后顺序都不一样；
+   并且保证【相邻两次不会是同一套】。
 
-   轮换间隔：可以按「间隔 + 时间点」换皮肤，不限于"每天一套"（见配置里的 ROTATION）。
-   例：间隔 8h + 时间点 12:00 → 每天 04:00 / 12:00 / 20:00 各换一次
-   （24 小时制，以系统本地时间为准）。默认 = 间隔 24h + 时间点 00:00（即以前"每天 0 点换"）。
+   轮换间隔：按「间隔 + 时间点」换皮肤（改配置里的 ROTATION，用 vndbSkin.rotation() 核对）。
+   当前设置：间隔 8h + 时间点 12:00 → 每天 04:00 / 12:00 / 20:00 各换一次
+   （24 小时制，以系统本地时间为准）。想要"每天一套"就改成 intervalHours: 24, anchorHour: 0。
 
    手动指定（按优先级，URL 参数 > 控制台持久设置）：
      · URL 参数（只影响当次加载）
@@ -75,8 +75,8 @@
 
    ⚠️ 维护
      · 【加减主题】只改配置里的 THEMES 数组（name = custom/ 下的文件名去掉 .css），
-       再把 CDN_BASES 的 SHA 换成包含新文件的 commit。
-       ⚠️ 新增/删除主题会让"哪天用哪套"整体重排（块长 = 主题数量，会跟着变），这是必然的，不是 bug。
+       再把 CDN_BASES 的 SHA 换成包含新文件的 commit（文件已在当前 commit 里时不用换）。
+       ⚠️ 新增/删除主题会让"什么时候用哪套"整体重排（块长 = 主题数量，会跟着变），这是必然的，不是 bug。
      · 【主题 CSS】CDN 里钉的是 commit SHA：jsDelivr 对 @<sha> 回 max-age=31536000 immutable
        （浏览器一年只下一次，性能最好），代价是改了主题样式要手动把下面的 SHA 换成新 commit。
        ⚠️ 别给主题改成 @main：分支引用是 7 天缓存，改了要等一周；本脚本又会把 CSS 缓存在
@@ -103,27 +103,35 @@
      --------------------------------------------------------------------- */
 
   /** 主题仓库（只有这个仓库的 custom/ 会被加载）。SHA 要对上 commit，
-      改动 custom/ 里的主题后要一起换（当前 = "fix: unify shade, alpha, etc"，
-      已包含全部 10 套主题）。 */
+      改动 custom/ 里的主题后要一起换（当前 = "feat: adjust title positioning"，
+      已包含全部 18 套主题）。 */
   const CDN_BASES = [
-    'https://fastly.jsdelivr.net/gh/nikaidou-amane/vndb-skins@1c933613099d459135b058c644ec99ce1cd98281/custom/',
-    'https://cdn.jsdelivr.net/gh/nikaidou-amane/vndb-skins@1c933613099d459135b058c644ec99ce1cd98281/custom/',
+    'https://fastly.jsdelivr.net/gh/nikaidou-amane/vndb-skins@9835aae3d6e0bd77633c0e8f355248b2ee1fca51/custom/',
+    'https://cdn.jsdelivr.net/gh/nikaidou-amane/vndb-skins@9835aae3d6e0bd77633c0e8f355248b2ee1fca51/custom/',
   ];
 
-  /** 主题清单：name 就是 custom/ 下的文件名去掉 .css，按目录名排序。
-      加/删主题只改这个数组。⚠️ 主题数量 N 参与选序，增删会重排之后所有日期的安排
-      （必然如此：要让"相邻两天不同"，选序就得知道 N）。 */
+  /** 主题清单：name 就是 custom/ 下的文件名去掉 .css，按目录名排序（现为 18 套）。
+      加/删主题只改这个数组；⚠️ 主题数量 N 参与选序，增删会重排之后所有时段的安排
+      （必然如此：要让"相邻两次不同"，选序就得知道 N）。 */
   const THEMES = [
+    'araya_touka',
     'arise_kaguya',
+    'enamori_senri',
     'himeno_towa',
     'izumi_hiyori',
+    'kazami_yui',
     'koizuka_mana',
+    'misakura_rin',
     'miyaguni_akari',
+    'mochizuki_amane',
     'nabari_anju',
+    'naitou_maia',
     'niimi_sora',
     'nikaidou_shinku',
     'sorakado_ao',
     'tobisawa_misaki',
+    'yonagi',
+    'yugyouji_yoruko',
   ].map(name => ({ name, file: `${name}.css` }));
 
   /** 官方皮肤名。三套主题都是照着它（Angelic Serenade）的变量体系写的，
@@ -136,18 +144,18 @@
 
   /* ---------------------------------------------------------------------
      轮换间隔：多久换一套皮肤
-     · intervalHours：间隔小时数。默认 24 = “每天一套”（跟以前一样）。
+     · intervalHours：间隔小时数（24 = 每天一套，8 = 每天三套）。
                       写小数也可以（0.5 = 半小时，最小 1 分钟），方便测试。
                       **建议取能整除 24 的值**（1/2/3/4/6/8/12/24），否则时间点会漂移。
      · anchorHour   ：时间点，24 小时制、按【系统本地时间】。
                       例：intervalHours=8 + anchorHour=12 → 每天 04:00 / 12:00 / 20:00 各换一次
-                      例：intervalHours=24 + anchorHour=0  → 每天 00:00 换（默认）
+                      例：intervalHours=24 + anchorHour=0  → 每天 00:00 换
      · 判定基于“槽位号”：以固定时刻为锚、每 rotationMs 一个槽，槽位号单调递增；
        选序（分块置乱）作用在槽位号上，所以“每 N 次各出现一次 + 相邻两次不同”依然成立。
      --------------------------------------------------------------------- */
   const ROTATION = {
-    intervalHours: 24,     // 每多少小时换一套（0.5 = 半小时）
-    anchorHour: 0,         // 间隔的起点（0-23，本地时间）
+    intervalHours: 8,      // 每多少小时换一套（24 = 每天一套；0.5 = 半小时）
+    anchorHour: 12,        // 间隔的起点（0-23，本地时间）→ 8h + 12:00 = 每天 04/12/20 点
   };
 
   /** 间隔毫秒数（最小 1 分钟，防止写成 0 之后疯狂轮换） */
