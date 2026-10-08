@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
 <meta charset="utf-8">
-<title>全部 18 套皮肤速览</title>
+<title>全部 20 套皮肤速览</title>
 <style>
   :root { --line: #2a2f38; --dim: #8b949e; }
   html, body { margin: 0; background: #0f1216; color: #e6edf3;
@@ -62,7 +62,7 @@
 </style>
 </head>
 <body>
-<h1>全部 18 套皮肤速览 <small>2026-10 新增 8 套 + 原有 10 套 / 与官方 <code>Angelic Serenade</code> 变量体系一致
+<h1>全部 20 套皮肤速览 <small>2026-10-09 追加 2 套 + 2026-10 新增 8 套 + 原有 10 套 / 与官方 <code>Angelic Serenade</code> 变量体系一致
   &nbsp;・&nbsp; 本次计算于 <code id="stamp">…</code></small></h1>
 <p class="note">每格是把这个主题的<b>真实 CSS</b> 注入官方 <code>angel.css</code> 后缩放的整页预览（原视口 <code>1280×660</code>，缩到 33%）。
    色板、硬指标、卡片上的作品名与角色名都是加载时<b>现算／现读</b>的：颜色变量读各主题文件 <code>:root</code>，
@@ -156,11 +156,15 @@ const over = (fg, alpha, bg) => { const f = hex2rgb(fg), b = hex2rgb(bg);
   return rgb2hex([0, 1, 2].map(i => alpha*f[i] + (1 - alpha)*b[i])); };
 const hd = (a, b) => { let d = Math.abs(a - b) % 360; return +(d > 180 ? 360 - d : d).toFixed(1); };
 
-/* ===================== 主题清单（全部 18 套） =====================
+/* ===================== 主题清单（全部 20 套） =====================
    名字必须和 custom/<name>.css 对得上；`vnEn` 是作品名的**罗马字**，
    只在文件头取不到作品名时用来兜底（主标题优先用文件头里的作品名，副标题给罗马字）。
    分组只为看的时候好找，不影响渲染。 */
 const GROUPS = [
+  ["2026-10 追加", [
+    ["ayase_aisa",      "Sousaku Kanojo no Ren'ai Koushiki"],
+    ["umino_miyako",    "Futamata Ren'ai"],
+  ]],
   ["2026-10 新增", [
     ["araya_touka",     "Tsuki no Kanata de Aimashou"],
     ["enamori_senri",   "PriministAr"],
@@ -341,7 +345,7 @@ async function fetchCss(rel) {
       document.body.className = b.dataset.view === "all" ? "" : "v-" + b.dataset.view;
     };
   }
-  document.title = "全部 18 套皮肤速览";
+  document.title = "全部 20 套皮肤速览";
   /* 右上角那个时间戳：它变了才算拿到新文件；没变就是本页被缓存了（见文件头的说明） */
   const st = document.getElementById("stamp");
   if (st) st.textContent = new Date(STAMP).toLocaleTimeString();
