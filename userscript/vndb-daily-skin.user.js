@@ -2,7 +2,7 @@
 // @name         VNDB Daily Skin
 // @name:zh-CN   VNDB 每日皮肤
 // @namespace    https://github.com/nikaidou-amane/vndb-skins
-// @version      2.5.0
+// @version      2.6.0
 // @description  按本地日期在 vndb-skins/custom/ 的多套主题之间轮换；document-start 同步注入，不再先闪默认皮肤
 // @author       nikaidou-amane
 // @match        https://vndb.org/*
@@ -20,7 +20,7 @@
    用法
    --------------------------------------------------------------------------
    默认：按配置的「轮换间隔 + 时间点」换皮肤（见 ROTATION），同一时间段内所有页面/刷新都是同一套。
-   选序规则（**不是**固定顺序）：每 N 次换肤算一个「块」（N = 主题数量，现为 18），
+   选序规则（**不是**固定顺序）：每 N 次换肤算一个「块」（N = 主题数量，现为 20），
    块内是全部主题的随机排列 → 每 N 次里每套主题正好出现一次，但块与块之间的先后顺序都不一样；
    并且保证【相邻两次不会是同一套】。
 
@@ -103,19 +103,20 @@
      --------------------------------------------------------------------- */
 
   /** 主题仓库（只有这个仓库的 custom/ 会被加载）。SHA 要对上 commit，
-      改动 custom/ 里的主题后要一起换（当前 = "feat: adjust title positioning"，
-      已包含全部 18 套主题）。 */
+      改动 custom/ 里的主题后要一起换（当前 = "feat: 2 new css"，
+      已包含全部 20 套主题）。 */
   const CDN_BASES = [
-    'https://fastly.jsdelivr.net/gh/nikaidou-amane/vndb-skins@9835aae3d6e0bd77633c0e8f355248b2ee1fca51/custom/',
-    'https://cdn.jsdelivr.net/gh/nikaidou-amane/vndb-skins@9835aae3d6e0bd77633c0e8f355248b2ee1fca51/custom/',
+    'https://fastly.jsdelivr.net/gh/nikaidou-amane/vndb-skins@77b71057b316578cea2075fc054494d3e94b18db/custom/',
+    'https://cdn.jsdelivr.net/gh/nikaidou-amane/vndb-skins@77b71057b316578cea2075fc054494d3e94b18db/custom/',
   ];
 
-  /** 主题清单：name 就是 custom/ 下的文件名去掉 .css，按目录名排序（现为 18 套）。
+  /** 主题清单：name 就是 custom/ 下的文件名去掉 .css，按目录名排序（现为 20 套）。
       加/删主题只改这个数组；⚠️ 主题数量 N 参与选序，增删会重排之后所有时段的安排
       （必然如此：要让"相邻两次不同"，选序就得知道 N）。 */
   const THEMES = [
     'araya_touka',
     'arise_kaguya',
+    'ayase_aisa',
     'enamori_senri',
     'himeno_towa',
     'izumi_hiyori',
@@ -130,6 +131,7 @@
     'nikaidou_shinku',
     'sorakado_ao',
     'tobisawa_misaki',
+    'umino_miyako',
     'yonagi',
     'yugyouji_yoruko',
   ].map(name => ({ name, file: `${name}.css` }));
