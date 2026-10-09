@@ -2,7 +2,7 @@
 // @name         VNDB Daily Skin
 // @name:zh-CN   VNDB 每日皮肤
 // @namespace    https://github.com/nikaidou-amane/vndb-skins
-// @version      2.7.0
+// @version      2.7.1
 // @description  按本地日期在 vndb-skins/custom/ 的多套主题之间轮换；document-start 同步注入，不再先闪默认皮肤
 // @author       nikaidou-amane
 // @match        https://vndb.org/*
@@ -103,11 +103,11 @@
      --------------------------------------------------------------------- */
 
   /** 主题仓库（只有这个仓库的 custom/ 会被加载）。SHA 要对上 commit，
-      改动 custom/ 里的主题后要一起换（当前 = "fix: adjust img size logic"，
+      改动 custom/ 里的主题后要一起换（当前 = "fix: adjust img size logic for narrow screen"，
       已包含全部 20 套主题）。 */
   const CDN_BASES = [
-    'https://fastly.jsdelivr.net/gh/nikaidou-amane/vndb-skins@4e6497e39e75aae3f2d9508fb9caa274913c1586/custom/',
-    'https://cdn.jsdelivr.net/gh/nikaidou-amane/vndb-skins@4e6497e39e75aae3f2d9508fb9caa274913c1586/custom/',
+    'https://fastly.jsdelivr.net/gh/nikaidou-amane/vndb-skins@a927c93bc28af1fa1e30891068dd5147ae938cfe/custom/',
+    'https://cdn.jsdelivr.net/gh/nikaidou-amane/vndb-skins@a927c93bc28af1fa1e30891068dd5147ae938cfe/custom/',
   ];
 
   /** 主题清单：name 就是 custom/ 下的文件名去掉 .css，按目录名排序（现为 20 套）。
