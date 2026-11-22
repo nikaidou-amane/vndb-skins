@@ -13,8 +13,10 @@
 
   /* 官方那颗 433x140 的装饰图和本批背景图不是一套（主题文件里也会各隐藏一次） */
   #bgright { display: none; }
-  /* 侧栏用官方那套（body>nav），但 mock 里不需要汉堡按钮 */
-  body > header nav { display: none; }
+  /* ⚠️ 这里**不再**把 `body > header nav` 整条藏掉：那一排就是真站的「主标签栏」。
+     汉堡按钮不用手管 —— 官方 CSS 在宽屏本来就把 `body>header nav>label` 设成 `visibility:hidden`，
+     而且 visibility 是**保留占位**的，menu 才会被 `justify-content:space-between` 推到右边、
+     和内容列右缘对齐。改成 display:none 会把占位一起抽掉，标签栏就掉到最左边 —— 跟真站不一样。 */
 
   /* 把各语义色摆出来，方便一眼看清每一档是什么颜色 */
   .mk-gray { color: var(--grayedout); }
@@ -27,7 +29,6 @@
      背景 / 边框 / 内边距全部交给官方 CSS（主题只改变量），这样才和真站一致。
      自定义盒子会把官方规则盖掉（类的特异性高于元素选择器）。 */
   .mk-sec  { background: var(--secbg); border: 1px solid var(--secborder); padding: 4px 8px; margin: 8px 0; }
-  .mk-tabc { display: inline-block; background: var(--tabbg); border: 1px solid var(--border); border-bottom: none; padding: 2px 10px; }
   .mk-h2   { display: flex; justify-content: space-between; background: var(--boxbg);
              border-bottom: 1px solid var(--border); padding: 1px 4px; font-weight: bold; }
   .mk-navrow { padding: 2px 8px; }
@@ -38,7 +39,20 @@
 <body>
 <header>
   <h1><a href="#">the visual novel database</a></h1>
-  <nav><label for="mainmenu">≡</label></nav>
+  <!-- ① 主标签栏（真站 `HTML.pm::_maintabs_()`）：`header > nav > menu > li`。
+       第一项永远是条目 id 本身、带 `li.tabselected`，其余按权限/数据有选择地出现。
+       这一排吃的就是官方那套 `body>* nav>menu>li>a`：未选中 = --tabbg、
+       `li.tabselected>a` = --blendbg、边框 = --border —— 主题的标签配色在这里一眼可见。 -->
+  <nav>
+    <label for="mainmenu">Menu</label>
+    <menu>
+      <li class="tabselected"><a href="#">v9093</a></li>
+      <li><a href="#">relations</a></li>
+      <li><a href="#">releases</a></li>
+      <li><a href="#">edit</a></li>
+      <li><a href="#">history</a></li>
+    </menu>
+  </nav>
 </header>
 <input type="checkbox" id="mainmenu" checked hidden>
 
@@ -80,12 +94,50 @@
     </table>
   </article>
 
+  <!-- ② 页内标签栏（真站 `VN_Page.pm::tabs_()`）：`main > nav > menu` ——
+       ⚠️ **必须是 main 的直接子元素**：官方选择器是 `body>* nav>menu>li>a`，
+       套进任何 wrapper（哪怕只是个 div）就整条失效，标签会退化成浏览器默认的列表项 ——
+       那时看到的就不再是真站的样子了。
+       左侧 menu = 页签（main / covers / tags / characters / reviews / quotes），
+       右侧 menu = 操作项（未登录时为空，space-between 这时就只把页签摆在左边）。
+       选中态靠 `li.tabselected`（→ --blendbg），未选中靠基类（→ --tabbg）；
+       `border-bottom:none` + `height:22px; margin-bottom:-1px` 是官方给「标签咬住下方框体」用的，别改。 -->
+  <nav>
+    <menu>
+      <li class="tabselected"><a href="#">main</a></li>
+      <li><a href="#">covers (12)</a></li>
+      <li><a href="#">tags</a></li>
+      <li><a href="#">characters (48)</a></li>
+      <li><a href="#">reviews (3)</a></li>
+      <li><a href="#">quotes (7)</a></li>
+    </menu>
+    <menu>
+      <li><a href="#">add review</a></li>
+      <li><a href="#">add character</a></li>
+    </menu>
+  </nav>
+
   <p>&#26412;&#25991;&#12486;&#12461;&#12473;&#12488;&#12398;&#12469;&#12531;&#12503;&#12523;&#12289;<a href="#">&#12522;&#12531;&#12463;</a>&#12399;
      <span class="mk-gray">&#24369;&#21270;</span> &#12420 <span class="mk-so">&#24375;&#35519;</span> &#12392;&#20006;&#12409;&#12390;&#12418;&#35501;&#12417;&#12414;&#12377;&#12290;</p>
 
   <div class="mk-sec">&#20837;&#21147;&#26694; / &#34920;&#22836;&#19968;&#26723; &#65288;--secbg / --secborder&#65289;</div>
-  <p><span class="mk-tabc">&#26410;&#36984;&#20013;&#26631;&#31614;</span></p>
   <p class="mk-gray">the quick brown fox jumps over the lazy dog &mdash; 0123456789</p>
+
+  <!-- ③ 分页标签（真站 `HTML.pm::paginate_()`，`nav class="bottom"`）：标签的**第三种底色** ——
+       `a.highlightselected` 用的是 --secbg（当前页）；和上面两排的 --tabbg / --blendbg 一起，
+       三档标签底色在这页上就齐了。`nav.bottom` 的边框朝下长（border-bottom），
+       整排还带 `margin:-10px 0 10px 0`，天生要贴着上一块内容 —— 放在正文之后正合适。 -->
+  <nav class="bottom">
+    <menu class="browsetabs">
+      <li><a href="#">&#8249; previous</a></li>
+      <li><a href="#">1</a></li>
+      <li><a class="highlightselected" href="#">2</a></li>
+      <li><a href="#">3</a></li>
+      <li class="ellipsis">&#8943;</li>
+      <li><a href="#">9</a></li>
+      <li><a href="#">next &#8250;</a></li>
+    </menu>
+  </nav>
 
   <footer>footer &middot; <a href="#">a link</a> &middot; <span class="mk-ft">&#39029;&#33050;</span></footer>
 </main>
