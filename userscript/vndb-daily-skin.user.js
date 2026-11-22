@@ -2,7 +2,7 @@
 // @name         VNDB Daily Skin
 // @name:zh-CN   VNDB 每日皮肤
 // @namespace    https://github.com/nikaidou-amane/vndb-skins
-// @version      2.8.2
+// @version      2.8.3
 // @description  按本地日期在 vndb-skins/custom/ 的多套主题之间轮换；document-start 同步注入，不再先闪默认皮肤
 // @author       nikaidou-amane
 // @match        https://vndb.org/*
@@ -106,8 +106,8 @@
       改动 custom/ 里的主题后要一起换（当前 = "feat: replace mukou_aoi image + sync comments to tuned values"，
       已包含全部 25 套主题，含 mukou_aoi 的新图）。 */
   const CDN_BASES = [
-    'https://fastly.jsdelivr.net/gh/nikaidou-amane/vndb-skins@0a479c007aee90416238a2015b302d0839598fc8/custom/',
-    'https://cdn.jsdelivr.net/gh/nikaidou-amane/vndb-skins@0a479c007aee90416238a2015b302d0839598fc8/custom/',
+    'https://fastly.jsdelivr.net/gh/nikaidou-amane/vndb-skins@3215375645c285164ba788a5dea6e664d240f1c4/custom/',
+    'https://cdn.jsdelivr.net/gh/nikaidou-amane/vndb-skins@3215375645c285164ba788a5dea6e664d240f1c4/custom/',
   ];
 
   /** 主题清单：name 就是 custom/ 下的文件名去掉 .css，按目录名排序（现为 25 套）。
