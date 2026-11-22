@@ -2,7 +2,7 @@
 // @name         VNDB Daily Skin
 // @name:zh-CN   VNDB 每日皮肤
 // @namespace    https://github.com/nikaidou-amane/vndb-skins
-// @version      2.7.1
+// @version      2.8.1
 // @description  按本地日期在 vndb-skins/custom/ 的多套主题之间轮换；document-start 同步注入，不再先闪默认皮肤
 // @author       nikaidou-amane
 // @match        https://vndb.org/*
@@ -103,14 +103,14 @@
      --------------------------------------------------------------------- */
 
   /** 主题仓库（只有这个仓库的 custom/ 会被加载）。SHA 要对上 commit，
-      改动 custom/ 里的主题后要一起换（当前 = "fix: adjust img size logic for narrow screen"，
-      已包含全部 20 套主题）。 */
+      改动 custom/ 里的主题后要一起换（当前 = "feat: replace mukou_aoi image + sync comments to tuned values"，
+      已包含全部 25 套主题，含 mukou_aoi 的新图）。 */
   const CDN_BASES = [
-    'https://fastly.jsdelivr.net/gh/nikaidou-amane/vndb-skins@a927c93bc28af1fa1e30891068dd5147ae938cfe/custom/',
-    'https://cdn.jsdelivr.net/gh/nikaidou-amane/vndb-skins@a927c93bc28af1fa1e30891068dd5147ae938cfe/custom/',
+    'https://fastly.jsdelivr.net/gh/nikaidou-amane/vndb-skins@b90a90aea616cdc1c2e906f217af10d496f1659a/custom/',
+    'https://cdn.jsdelivr.net/gh/nikaidou-amane/vndb-skins@b90a90aea616cdc1c2e906f217af10d496f1659a/custom/',
   ];
 
-  /** 主题清单：name 就是 custom/ 下的文件名去掉 .css，按目录名排序（现为 20 套）。
+  /** 主题清单：name 就是 custom/ 下的文件名去掉 .css，按目录名排序（现为 25 套）。
       加/删主题只改这个数组；⚠️ 主题数量 N 参与选序，增删会重排之后所有时段的安排
       （必然如此：要让"相邻两次不同"，选序就得知道 N）。 */
   const THEMES = [
@@ -119,17 +119,22 @@
     'ayase_aisa',
     'enamori_senri',
     'himeno_towa',
+    'inashiro_mikoto',
     'izumi_hiyori',
     'kazami_yui',
     'koizuka_mana',
+    'kurose_tsubasa',
     'misakura_rin',
     'miyaguni_akari',
     'mochizuki_amane',
+    'mukou_aoi',
     'nabari_anju',
     'naitou_maia',
     'niimi_sora',
     'nikaidou_shinku',
+    'shijou_rinka',
     'sorakado_ao',
+    'takakura_anri',
     'tobisawa_misaki',
     'umino_miyako',
     'yonagi',
